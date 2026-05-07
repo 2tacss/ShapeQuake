@@ -17,6 +17,12 @@ typedef struct {
 	sq_arena_block_t *head;
 	sq_arena_block_t *current;
 	size_t block_size;
+#ifdef DEBUG
+	struct {
+	const char *last_caller;
+	size_t last_alloc_size;
+	} stats;
+#endif
 } sq_arena_t;
 
 /* Paging size  */
