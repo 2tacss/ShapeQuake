@@ -135,7 +135,6 @@ void *sq_arena_alloc(sq_arena_t *arena, size_t size) {
 	return sq_arena_allocate_raw(arena, size);
 }
 
-
 void sq_arena_reset(sq_arena_t *arena) {
 	if (!arena) return;
 	sq_arena_block_t *it = arena->head;
@@ -144,6 +143,22 @@ void sq_arena_reset(sq_arena_t *arena) {
 		it = it->next;
 	}
 	arena->current = arena->head;
+}
+
+unsigned int sq_get_amount_capacity(sq_arena_block_t *head) {
+	if (head == nullptr) return 0;
+
+	unsigned int amount = 0;
+	sq_arena_block_t *it = head;
+
+	while (it) {
+		if (it->capacity < 1) {
+			return -1;
+		}
+		amount += it->capacity;
+		it = it->next;
+	}
+	return amount;
 }
 
 /**
