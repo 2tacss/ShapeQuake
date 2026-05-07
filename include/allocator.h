@@ -4,8 +4,6 @@
 #include <stddef.h>
 #include "common.h"
 
-
-
 typedef struct sq_arena_block {
  struct sq_arena_block *next;
  size_t offset;
@@ -54,6 +52,7 @@ void sq_free(void *ptr);
 sq_arena_t *sq_arena_init(size_t block_size);
 void *sq_arena_alloc(sq_arena_t *arena, size_t size);
 void sq_arena_destroy(sq_arena_t *arena);
+void sq_arena_shred(sq_arena_t *arena);
 
 
 #endif

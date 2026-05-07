@@ -111,6 +111,11 @@ void sq_arena_reset(sq_arena_t *arena) {
 	arena->current = arena->head;
 }
 
+void sq_arena_shred(sq_arena_t *arena) {
+	if (!arena) return;
+	
+}
+
 void sq_arena_destroy(sq_arena_t *arena) {
 	if (!arena) return;
 	sq_arena_block_t *block = arena->head;
