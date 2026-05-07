@@ -1,0 +1,29 @@
+# === Build Artifacts ===
+# 各ディレクトリ内のobjやバイナリを再帰的に除外
+**/obj/
+*.o
+*.d
+*.idx
+*.out
+
+# === Executables ===
+# プロジェクト固有のバイナリ
+shapequake
+shapequake-shell
+sq_shell_test
+out
+
+# === LSP & Development Tools ===
+compile_commands.json
+compile_flags.txt
+.cache/
+.gdb_history
+*.pch
+*.db
+
+# === Temporary / Others ===
+# 以前の残骸や一時ファイル
+abc
+*~
+*.swp
+create
