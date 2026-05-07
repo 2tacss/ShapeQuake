@@ -7,10 +7,13 @@
 
 
 typedef struct sq_arena_block {
- struct sq_arena_block *next;
- size_t offset;
- size_t capacity;
- alignas(16) char data[];
+	unsigned short id;
+	bool is_wiped; // data[] is or not if full zeroing by shred()
+	struct sq_arena_block *next;
+	struct sq_arena_block *prev;
+	size_t offset;
+	size_t capacity;
+	alignas(16) char data[];
 } sq_arena_block_t;
 
 typedef struct {
@@ -25,7 +28,12 @@ typedef struct {
 #endif
 } sq_arena_t;
 
-/* Paging size  */
+
+constexpr size_t SQ_NULL_LENGTH = 0;
+constexpr size_t SQ_BLOCK_LENGTH_DEFAULT = 1024;
+constexpr size_t SQ_SIZE_BLOCK_META = offsetof(sq_arena_block_t, data);
+
+/* Paging size */
 static inline size_t sq_align(size_t size) {
 	return (size + 15) & ~15;
 }
@@ -52,8 +60,10 @@ void sq_free(void *ptr);
  * Arena Manage
  */
 sq_arena_t *sq_arena_init(size_t block_size);
+void *sq_arena_alloc_impl(sq_arena_t *arena, size_t size, const char *file, int line, const char *func);
 void *sq_arena_alloc(sq_arena_t *arena, size_t size);
 void sq_arena_destroy(sq_arena_t *arena);
+bool sq_arena_shred(sq_arena_t *arena, short id, bool require_reset_offset);
 
 
 #endif
