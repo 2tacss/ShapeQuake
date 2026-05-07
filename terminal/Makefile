@@ -1,52 +1,39 @@
-CC        := clang
-CFLAGS    := -std=c23 -Wall -Wextra -g3 -O0 \
-             -Iinclude \
+include ../config.mk
+
+INCLUDES  := -Iinclude \
              -Iinclude/pty \
              -Iinclude/vterm \
-             -I../include \
-             -D_POSIX_C_SOURCE=200809L \
+             $(COMMON_INCLUDES) \
              $(shell pkg-config --cflags vterm)
 
 LDFLAGS   := $(shell pkg-config --libs vterm) -lutil -lpthread
 
-SRC_DIR   := src
 OBJ_DIR   := obj
 BIN       := terminal_test
 LIB_NAME  := libsq_terminal.a
 
-ALL_SRCS  := $(shell find $(SRC_DIR) -name "*.c")
-SHARED_SRC := ../src/allocator.c
-SRCS      := $(filter-out $(SRC_DIR)/main.c, $(ALL_SRCS))
-OBJS      := $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+ALL_SRCS  := $(shell find src -name "*.c")
+SRCS      := $(filter-out src/main.c, $(ALL_SRCS))
 
-lib: $(OBJS) $(OBJ_DIR)/allocator.o
-	ar rcs $(LIB_NAME) $(OBJS) $(OBJ_DIR)/allocator.o
+OBJS      := $(SRCS:src/%.c=$(OBJ_DIR)/%.o)
+COMMON_OBJS := $(patsubst $(ROOT)/src/%.c, $(OBJ_DIR)/common/%.o, $(COMMON_SRCS))
 
-test: $(ALL_SRCS) $(SHARED_SRC)
-	$(CC) $(CFLAGS) -DDEBUG $(ALL_SRCS) $(SHARED_SRC) -o $(BIN) $(LDFLAGS)
+lib: $(OBJS) $(COMMON_OBJS)
+	ar rcs $(LIB_NAME) $^
+
+test: $(ALL_SRCS) $(COMMON_SRCS)
+	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $(BIN) $(LDFLAGS)
+
+$(OBJ_DIR)/%.o: src/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+(OBJ_DIR)/common/%.o: $(ROOT)/src/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 lsp:
-	@printf "[\n" > compile_commands.json
-	@first=1; \
-	for src in $(ALL_SRCS) $(SHARED_SRC); do \
-		if [ $$first -ne 1 ]; then printf ",\n" >> compile_commands.json; fi; \
-		printf "  {\n" >> compile_commands.json; \
-		printf "    \"directory\": \"$(CURDIR)\",\n" >> compile_commands.json; \
-		printf "    \"command\": \"$(CC) $(CFLAGS) -DDEBUG -c $$src\",\n" >> compile_commands.json; \
-		printf "    \"file\": \"$$src\"\n" >> compile_commands.json; \
-		printf "  }" >> compile_commands.json; \
-		first=0; \
-	done
-	@printf "\n]\n" >> compile_commands.json
-	@echo "Generated terminal/compile_commands.json"
-
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
-	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-$(OBJ_DIR)/allocator.o: $(SHARED_SRC)
-	@mkdir -p $(OBJ_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(call gen_lsp, $(ALL_SRCS) $(COMMON_SRCS), compile_commands.json)
 
 clean:
 	rm -rf $(OBJ_DIR) $(BIN) $(LIB_NAME) compile_commands.json

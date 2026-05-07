@@ -1,17 +1,13 @@
-# ==============================================================================
-# config.mk - ShapeQuake Common Build Configuration
-# ==============================================================================
-
+# config.mk
 CC      := clang
 CFLAGS  := -std=c23 -Wall -Wextra -g3 -O0 -D_POSIX_C_SOURCE=200809L -DDEBUG
-
 ROOT    := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 COMMON_INCLUDES := -I$(ROOT)/include \
                    -I$(ROOT)/include/error
 
-COMMON_SRCS     := $(ROOT)/src/allocator.c \
-                   $(ROOT)/src/error/sq_error.c
+COMMON_SRCS := $(ROOT)/src/allocator.c \
+               $(ROOT)/src/error/sq_error.c
 
 define gen_lsp
 	@printf "[\n" > $(2)
