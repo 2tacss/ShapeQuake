@@ -91,15 +91,37 @@ void *sq_arena_alloc_impl(sq_arena_t *arena, size_t size, const char *file, int 
 	void *ptr = &arena->current->data[arena->current->offset];
 	arena->current->offset += aligned_size;
 
-#ifdef DEBUG
 	arena->stats.last_caller = func;
 	arena->stats.last_alloc_size = size;
 	(void)file;
 	(void)line;
-#endif
 
 	return ptr;
 }
+
+void *sq_arena_alloc(sq_arena_t *arena, size_t size) {
+	if (!arena || size == 0) return nullptr;
+
+	size_t aligned_size = sq_align(size);
+	if (arena->current->offset + aligned_size > arena->current->capacity) {
+		if (arena->current->next) {
+			arena->current = arena->current->next;
+			arena->current->offset = 0;
+		} else {
+			size_t next_size = (aligned_size > arena->block_size) ? aligned_size : arena->block_size;
+			sq_arena_block_t *new_block = sq_arena_new_block(next_size);
+			if (!new_block) return nullptr;
+			arena->current->next = new_block;
+			arena->current = new_block;
+		}
+	}
+
+	void *ptr = &arena->current->data[arena->current->offset];
+	arena->current->offset += aligned_size;
+
+	return ptr;
+}
+
 
 void sq_arena_reset(sq_arena_t *arena) {
 	if (!arena) return;
@@ -111,9 +133,8 @@ void sq_arena_reset(sq_arena_t *arena) {
 	arena->current = arena->head;
 }
 
+
 void sq_arena_shred(sq_arena_t *arena) {
-	if (!arena) return;
-	
 }
 
 void sq_arena_destroy(sq_arena_t *arena) {
