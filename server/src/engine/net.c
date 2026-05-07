@@ -6,12 +6,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/epoll.h>
-#include <errno.h>
-#include <signal.h>
-
 #include "protocol.h"
-#include "storage.h"
-#include "allocator.h"
 
 
 

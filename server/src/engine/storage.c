@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <sqlite3.h>
 #include "protocol.h"
-#include "storage.h"
+#include "engine/storage.h"
 
 static sqlite3 *db = NULL;
 
@@ -32,7 +32,6 @@ int db_init(const char *db_path) {
 
 	return 0;
 }
-
 
 int db_save_command(const sq_context_t *ctx, const char *cmd, const char *output) {
 	if (!db) return -1;

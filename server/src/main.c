@@ -8,10 +8,10 @@
 #include <errno.h>
 #include <signal.h>
 
-#include "core/net.h"
+#include "engine/net.h"
 #include "protocol.h"
-#include "storage.h"
-#include "core/allocator.h"
+#include "engine/storage.h"
+#include "allocator.h"
 
 #define MAX_EVENTS 16
 
