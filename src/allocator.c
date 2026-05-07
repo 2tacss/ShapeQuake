@@ -185,12 +185,30 @@ bool sq_arena_shred(sq_arena_t *arena, short id, bool require_reset_offset) {
 	return true;
 }
 
+bool sq_block_shred(sq_arena_block_t *block, bool require_reset_offset) {
+	if (!block) return false;
+
+	volatile char *p = (volatile char *)block->data;
+	for (size_t i = 0; i < block->capacity; i++) {
+		p[i] = 0;
+	}
+	block->is_wiped = true;
+
+	if (require_reset_offset) {
+		block->offset = 0;
+	}
+
+	return true;
+}
+
+
 void sq_arena_destroy(sq_arena_t *arena) {
 	if (!arena) return;
 	
 	sq_arena_block_t *block = arena->head;
 	while (block) {
 		sq_arena_block_t *next = block->next;
+		sq_block_shred(block, true);
 		sq_free(block);
 		block = next;
 	}

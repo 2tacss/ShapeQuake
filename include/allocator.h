@@ -64,6 +64,7 @@ void *sq_arena_alloc_impl(sq_arena_t *arena, size_t size, const char *file, int 
 void *sq_arena_alloc(sq_arena_t *arena, size_t size);
 size_t sq_get_amount_capacity(sq_arena_block_t *head);
 bool sq_arena_shred(sq_arena_t *arena, short id, bool require_reset_offset);
+bool sq_block_shred(sq_arena_block_t *block, bool require_reset_offset);
 void sq_arena_destroy(sq_arena_t *arena);
 
 #endif
