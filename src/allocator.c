@@ -43,6 +43,23 @@ void sq_free(void *ptr) {
 	}
 }
 
+
+/**
+ * Arena Management
+ */
+static sq_arena_block_t *get_arena(sq_arena_block_t *block_head, unsigned short id) {
+	if (!block_head) return nullptr;
+
+	sq_arena_block_t *it = block_head;
+	while (it) {
+		if (it->id == id) {
+			return it;
+		}
+		it = it->next;
+	}
+	return nullptr;
+}
+
 static sq_arena_block_t *sq_arena_new_block(size_t size) {
 	size_t total_size = sizeof(sq_arena_block_t) + size;
 	sq_arena_block_t *block = sq_malloc(total_size);
@@ -52,7 +69,6 @@ static sq_arena_block_t *sq_arena_new_block(size_t size) {
 	block->is_wiped = false;
 	block->next = nullptr;
 	block->prev = nullptr;
-	// TODO: calculation meta zie
 	block->offset = 0;
 	block->capacity = size;
 	return block;
@@ -79,7 +95,7 @@ sq_arena_t *sq_arena_init(size_t block_size) {
 
 static inline void *sq_arena_allocate_raw(sq_arena_t *arena, size_t size) {
 	size_t aligned_size = sq_align(size);
-	if (arena->current->offset + aligned_size > arena->current->capacity) {
+	while (arena->current->offset + aligned_size > arena->current->capacity) {
 		if (arena->current->next) {
 			arena->current = arena->current->next;
 			arena->current->offset = 0;
@@ -94,6 +110,7 @@ static inline void *sq_arena_allocate_raw(sq_arena_t *arena, size_t size) {
 			new_block->prev = arena->current;
 			arena->current->next = new_block;
 			arena->current = new_block;
+			break;
 		}
 	}
 
@@ -129,12 +146,33 @@ void sq_arena_reset(sq_arena_t *arena) {
 	arena->current = arena->head;
 }
 
+/**
+* If id < 0, reference current id
+*/
+bool sq_arena_shred(sq_arena_t *arena, short id, bool require_reset_offset) {
+	if (!arena) return false;
 
-void sq_arena_shred(sq_arena_t *arena) {
+	unsigned short id_target = (id < 0) ? arena->current->id : (unsigned short)id;
+	sq_arena_block_t *block_target = get_arena(arena->head, id_target);
+
+	if (block_target == nullptr) return false;
+
+	volatile char *p = (volatile char *)block_target->data;
+	for (size_t i = 0; i < block_target->capacity; i++) {
+		p[i] = 0;
+	}
+	block_target->is_wiped = true;
+
+	if (require_reset_offset) {
+		block_target->offset = 0;
+	}
+
+	return true;
 }
 
 void sq_arena_destroy(sq_arena_t *arena) {
 	if (!arena) return;
+	
 	sq_arena_block_t *block = arena->head;
 	while (block) {
 		sq_arena_block_t *next = block->next;
