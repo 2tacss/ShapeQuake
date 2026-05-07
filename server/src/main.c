@@ -64,24 +64,22 @@ static void handle_client_payload(int client_fd) {
 			}
 
 			/* Save to SQLite */
-			db_save_command(&header.context, cmd_ptr, out_ptr);
+			sq_db_save_backlog(&header.context, cmd_ptr, out_ptr);
 			
 			printf("[LOGGED] %s (Output: %zu bytes)\n", cmd_ptr, out_ptr ? strlen(out_ptr) : 0);
 		}
-		
 		sq_free(payload);
 	}
 }
 
 int main(void) {
-
 	int server_fd, epoll_fd;
 	struct sockaddr_un addr;
 	struct epoll_event ev, events[MAX_EVENTS];
 
 	signal(SIGINT, handle_sigint);
 
-	if (db_init("commands.db") != 0) {
+	if (sq_db_init("commands.db") != 0) {
 		fprintf(stderr, "Database initialization failed.\n");
 		return 1;
 	}
@@ -128,7 +126,7 @@ int main(void) {
 	}
 
 	printf("\nShutting down now...\n");
-	db_close();
+	sq_db_close();
 	close(server_fd);
 	unlink(SQ_SOCKET_PATH);
 	printf("\nShutdown safely.\n");
