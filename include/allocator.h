@@ -30,7 +30,7 @@ typedef struct {
 
 
 constexpr size_t SQ_NULL_LENGTH = 0;
-constexpr size_t SQ_BLOCK_LENGTH_DEFAULT = 1024;
+constexpr size_t SQ_SIZE_BLOCK_DEFAULT = 1024;
 constexpr size_t SQ_SIZE_BLOCK_META = offsetof(sq_arena_block_t, data);
 
 /* Paging size */

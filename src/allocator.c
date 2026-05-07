@@ -78,7 +78,7 @@ sq_arena_t *sq_arena_init(size_t block_size) {
 	sq_arena_t *arena = sq_malloc(sizeof(sq_arena_t));
 	if (!arena) return nullptr;
 
-	size_t bs = (block_size < 1) ? SQ_BLOCK_LENGTH_DEFAULT : block_size;
+	size_t bs = (block_size < 1) ? SQ_SIZE_BLOCK_DEFAULT : block_size;
 	arena->block_size = sq_align(bs);
 	arena->head = sq_arena_new_block(arena->block_size);
 	if (!arena->head) {

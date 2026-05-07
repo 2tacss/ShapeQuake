@@ -1,7 +1,6 @@
 #ifndef SQ_PROTOCOL_H
 #define SQ_PROTOCOL_H
 
-#include "runtime/net.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <termios.h>
