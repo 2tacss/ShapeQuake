@@ -145,7 +145,7 @@ void sq_arena_reset(sq_arena_t *arena) {
 	arena->current = arena->head;
 }
 
-unsigned int sq_get_amount_capacity(sq_arena_block_t *head) {
+size_t sq_get_amount_capacity(sq_arena_block_t *head) {
 	if (head == nullptr) return 0;
 
 	unsigned int amount = 0;
@@ -153,7 +153,7 @@ unsigned int sq_get_amount_capacity(sq_arena_block_t *head) {
 
 	while (it) {
 		if (it->capacity < 1) {
-			return -1;
+			return SIZE_MAX;
 		}
 		amount += it->capacity;
 		it = it->next;

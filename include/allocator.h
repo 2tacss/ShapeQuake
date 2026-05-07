@@ -62,7 +62,7 @@ void sq_free(void *ptr);
 sq_arena_t *sq_arena_init(size_t block_size);
 void *sq_arena_alloc_impl(sq_arena_t *arena, size_t size, const char *file, int line, const char *func);
 void *sq_arena_alloc(sq_arena_t *arena, size_t size);
-unsigned int sq_get_amount_capacity(sq_arena_block_t *head);
+size_t sq_get_amount_capacity(sq_arena_block_t *head);
 bool sq_arena_shred(sq_arena_t *arena, short id, bool require_reset_offset);
 void sq_arena_destroy(sq_arena_t *arena);
 
