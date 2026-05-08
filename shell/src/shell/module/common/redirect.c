@@ -120,7 +120,7 @@ char* sq_heredoc_read_all(sq_heredoc_t *hd) {
 void sq_heredoc_finish(sq_heredoc_t *hd) {
 	if (!hd) return;
 	/* Destroy all blocks in the arena at once */
-	sq_arena_destroy(hd->arena);
+	sq_arena_destroy(hd->arena, true);
 	sq_free(hd->delimiter);
 	sq_free(hd);
 }

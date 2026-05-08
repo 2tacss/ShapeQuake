@@ -9,7 +9,8 @@
 /**
  * C23: Type Aliases
  */
-typedef uint8_t byte;
+constexpr sq_u16_t SQ_SUCCESS = 0x0000;
+constexpr sq_u16_t SQ_NULL_PTR = 0x0001;
 
 /**
  * C23: Attributes

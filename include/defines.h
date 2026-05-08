@@ -1,6 +1,8 @@
 #ifndef SHAPEQUAKE_DEFINES_H
 #define SHAPEQUAKE_DEFINES_H
 
+#include <stdint.h>
+
 /**
  * Terminal Emulation Constants
  */
@@ -12,6 +14,13 @@
  */
 #define SQ_LINE_BUF_SIZE 1024
 #define SQ_PTY_BUF_SIZE  4096
+
+/**
+ * Data Sizez
+ */
+typedef uint16_t sq_u16_t;
+typedef uint8_t byte;
+
 
 /**
  * Special Key Codes (ASCII/Raw Mode)

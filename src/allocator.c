@@ -187,7 +187,7 @@ size_t sq_get_amount_capacity(sq_arena_block_t *head) {
 /**
 * If id < 0, reference current id
 */
-bool sq_arena_shred(sq_arena_t *arena, short id, bool require_reset_offset) {
+bool sq_arena_shred(sq_arena_t *arena, short id, bool request_reset_offset) {
 	if (!arena) return false;
 
 	unsigned short id_target = (id < 0) ? arena->current->id : (unsigned short)id;
@@ -201,14 +201,14 @@ bool sq_arena_shred(sq_arena_t *arena, short id, bool require_reset_offset) {
 	}
 	block_target->is_wiped = true;
 
-	if (require_reset_offset) {
+	if (request_reset_offset) {
 		block_target->offset = 0;
 	}
 
 	return true;
 }
 
-bool sq_block_shred(sq_arena_block_t *block, bool require_reset_offset) {
+bool sq_block_shred(sq_arena_block_t *block, bool request_reset_offset) {
 	if (!block) return false;
 
 	volatile char *p = (volatile char *)block->data;
@@ -217,22 +217,26 @@ bool sq_block_shred(sq_arena_block_t *block, bool require_reset_offset) {
 	}
 	block->is_wiped = true;
 
-	if (require_reset_offset) {
+	if (request_reset_offset) {
 		block->offset = 0;
 	}
 
 	return true;
 }
 
-void sq_arena_destroy(sq_arena_t *arena) {
-	if (!arena) return;
-	
+sq_u16_t sq_arena_destroy(sq_arena_t *arena, bool force_destory) {
+	if (!arena) return SQ_NULL_PTR;
+	if (!force_destory && ((arena->contains_db_handle || arena->contains_fd))) {
+		return SQ_ARENA_FAILURE_RESOURCE_HELD;
+	}
+
 	sq_arena_block_t *block = arena->head;
 	while (block) {
 		sq_arena_block_t *next = block->next;
-		sq_block_shred(block, true);
+		sq_block_shred(block, SQ_ARENA_REQUEST_RESET_OFFSET);
 		sq_free(block);
 		block = next;
 	}
 	sq_free(arena);
+	return SQ_ARENA_SUCCESS;
 }
