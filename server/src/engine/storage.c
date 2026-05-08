@@ -1,17 +1,21 @@
 #include <stdio.h>
 #include <sqlite3.h>
+#include "engine/net.h"
 #include "protocol.h"
 #include "allocator.h"
 #include "engine/storage.h"
 
-static sqlite3 *h_db = NULL;
 
-int sq_db_init(const char *db_path) {
-	int rc = sqlite3_open(db_path, &h_db);
+bool sq_db_init(sq_server_context_t *ctx_server, char *db_path) {
+	if (ctx_server == nullptr) return -1;
+	
+	int rc = sqlite3_open(db_path, &ctx_server->ctx_db.h_db);
 	if (rc != SQLITE_OK) {
-		fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(h_db));
-		return -1;
+		fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(ctx_server->ctx_db.h_db));
+		return false;
 	}
+
+	ctx_server->ctx_db.is_open = true;
 
 	const char *sql = 
 		"CREATE TABLE IF NOT EXISTS command_logs ("
@@ -24,31 +28,34 @@ int sq_db_init(const char *db_path) {
 		");";
 
 	char *err_msg = NULL;
-	rc = sqlite3_exec(h_db, sql, NULL, NULL, &err_msg);
+	rc = sqlite3_exec(ctx_server->ctx_db.h_db, sql, NULL, NULL, &err_msg);
 	if (rc != SQLITE_OK) {
 		fprintf(stderr, "SQL error: %s\n", err_msg);
 		sqlite3_free(err_msg);
-		return -1;
+		return false;
 	}
 
-	return 0;
+	return true;
 }
 
-void db_close(void) {
-	if (h_db) sqlite3_close(h_db);
+void sq_db_close(sq_server_context_t *ctx_server) {
+	if (ctx_server && ctx_server->ctx_db.is_open) {
+		sqlite3_close(ctx_server->ctx_db.h_db);
+		ctx_server->ctx_db.is_open = false;
+	}
 }
 
 /**
  * Main node Backlog data
  */
-int sq_db_save_backlog(const sq_context_t *ctx, const char *cmd, const char *output) {
-	if (!h_db) return -1;
+int sq_db_save_backlog(sq_server_context_t *ctx_server, const sq_overview_context_t *ctx, const char *cmd, const char *output) {
+	if (!ctx_server->ctx_db.h_db) return -1;
 
 	const char *sql = "INSERT INTO command_logs (timestamp, project, working_dir, command, output) VALUES (?, ?, ?, ?, ?);";
 	sqlite3_stmt *stmt;
 
-	if (sqlite3_prepare_v2(h_db, sql, -1, &stmt, NULL) != SQLITE_OK) {
-		fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(h_db));
+	if (sqlite3_prepare_v2(ctx_server->ctx_db.h_db, sql, -1, &stmt, NULL) != SQLITE_OK) {
+		fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(ctx_server->ctx_db.h_db));
 		return -1;
 	}
 
@@ -61,25 +68,26 @@ int sq_db_save_backlog(const sq_context_t *ctx, const char *cmd, const char *out
 
 	int rc = sqlite3_step(stmt);
 	if (rc != SQLITE_DONE) {
-		fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(h_db));
+		fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(ctx_server->ctx_db.h_db));
 	}
 
 	sqlite3_finalize(stmt);
 	return (rc == SQLITE_DONE) ? 0 : -1;
 }
 
-void sq_load_backlog() {
+void sq_load_backlog(sq_server_context_t *ctx_server) {
 	const char *sql = "SELECT id, timestamp, project, working_dir, command, output from command_logs;";
 
 	sqlite3_stmt *stmt;
-	if (sqlite3_prepare_v2(h_db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
-		fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(h_db));
+	if (sqlite3_prepare_v2(ctx_server->ctx_db.h_db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+		fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(ctx_server->ctx_db.h_db));
 		return;
 	}
+
 	while (sqlite3_step(stmt) == SQLITE_ROW) {
 		int id = sqlite3_column_int(stmt, 0);
 		int timestamp = sqlite3_column_bytes(stmt, 1);
-		const byte *project = sqlite3_column_text(stmt, 2);
+		const byte *project_name = sqlite3_column_text(stmt, 2);
 		const byte *working_dir = sqlite3_column_text(stmt, 3);
 		const byte *command = sqlite3_column_text(stmt, 4);
 		const byte *output = sqlite3_column_text(stmt, 5);
