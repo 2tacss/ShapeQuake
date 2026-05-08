@@ -13,6 +13,7 @@ typedef struct server_context_t {
 } sq_server_context_t;
 
 void start_listening(sq_server_context_t *ctx_server);
+void sq_handle_client_payload(int client_fd);
 
 
 
