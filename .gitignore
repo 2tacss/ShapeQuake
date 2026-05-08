@@ -11,6 +11,7 @@
 shapequake
 shapequake-shell
 sq_shell_test
+sq_server
 out
 
 # === LSP & Development Tools ===
