@@ -87,6 +87,8 @@ sq_arena_t *sq_arena_init(size_t block_size) {
 	}
 
 	arena->current = arena->head;
+	arena->contains_fd = false;
+	arena->contains_db_handle = false;
 #ifdef DEBUG
 	memset(&arena->stats, 0, sizeof(arena->stats));
 #endif
@@ -133,6 +135,27 @@ void *sq_arena_alloc_impl(sq_arena_t *arena, size_t size, const char *file, int 
 
 void *sq_arena_alloc(sq_arena_t *arena, size_t size) {
 	return sq_arena_allocate_raw(arena, size);
+}
+
+void *sq_arena_alloc_fd(sq_arena_t *arena, size_t size) {
+	sq_arena_t *ptr = (sq_arena_t *)sq_arena_allocate_raw(arena, size);
+	ptr->contains_fd = true;
+	ptr->contains_db_handle = false;
+	return (void *)ptr;
+}
+
+void *sq_arena_alloc_db_connection(sq_arena_t *arena, size_t size) {
+	sq_arena_t *ptr = (sq_arena_t *)sq_arena_allocate_raw(arena, size);
+	ptr->contains_db_handle = true;
+	ptr->contains_fd = false;
+	return (void *)ptr;
+}
+
+void *sq_arena_alloc_resources(sq_arena_t *arena, size_t size) {
+	sq_arena_t *ptr = (sq_arena_t *)sq_arena_allocate_raw(arena, size);
+	ptr->contains_db_handle = true;
+	ptr->contains_fd = true;
+	return (void *)ptr;
 }
 
 void sq_arena_reset(sq_arena_t *arena) {
@@ -200,7 +223,6 @@ bool sq_block_shred(sq_arena_block_t *block, bool require_reset_offset) {
 
 	return true;
 }
-
 
 void sq_arena_destroy(sq_arena_t *arena) {
 	if (!arena) return;

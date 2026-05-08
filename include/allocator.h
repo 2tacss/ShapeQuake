@@ -20,6 +20,8 @@ typedef struct {
 	sq_arena_block_t *head;
 	sq_arena_block_t *current;
 	size_t block_size;
+	bool contains_fd;
+	bool contains_db_handle;
 #ifdef DEBUG
 	struct {
 	const char *last_caller;
@@ -62,6 +64,9 @@ void sq_free(void *ptr);
 sq_arena_t *sq_arena_init(size_t block_size);
 void *sq_arena_alloc_impl(sq_arena_t *arena, size_t size, const char *file, int line, const char *func);
 void *sq_arena_alloc(sq_arena_t *arena, size_t size);
+void *sq_arena_alloc_fd(sq_arena_t *arena, size_t size);
+void *sq_arena_alloc_db_connection(sq_arena_t *arena, size_t size);
+void *sq_arena_alloc_resources(sq_arena_t *arena, size_t size);
 size_t sq_get_amount_capacity(sq_arena_block_t *head);
 bool sq_arena_shred(sq_arena_t *arena, short id, bool require_reset_offset);
 bool sq_block_shred(sq_arena_block_t *block, bool require_reset_offset);
