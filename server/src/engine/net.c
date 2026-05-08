@@ -49,7 +49,7 @@ void start_listening(sq_server_context_t *ctx_server) {
 /**
  * Handle data from a shell client and persist to SQLite.
  */
-void sq_handle_client_payload(int client_fd) {
+void sq_handle_client_payload(sq_server_context_t *ctx_server, int client_fd) {
 	sq_header_t header;
 	char *ptr = (char *)&header;
 	size_t total_received = 0;
@@ -61,40 +61,32 @@ void sq_handle_client_payload(int client_fd) {
 			total_received += n;
 		} else if (n == 0) {
 			fprintf(stderr, "Connection closed by client.\n");
+			close(client_fd);
 			return; 
 		} else {
 			if (errno == EINTR) continue;
-			if (errno == EAGAIN || errno == EWOULDBLOCK)) continue;
+			if (errno == EAGAIN || errno == EWOULDBLOCK) return;
+			close(client_fd);
 			return;
 		}
 	}
 
 	if (header.magic != SQ_MAGIC) return;
-
+	
 	if (header.payload_size > 0) {
-		char *payload = sq_malloc(header.payload_size);
+		char *payload = sq_arena_alloc(ctx_server->arena, sizeof(header.payload_size));
 		if (!payload) return;
-
 		ssize_t total_recv = 0;
 		while (total_recv < (ssize_t)header.payload_size) {
 			ssize_t r = recv(client_fd, payload + total_recv, header.payload_size - total_recv, 0);
 			if (r <= 0) break;
 			total_recv += r;
 		}
-
 		if (total_recv == (ssize_t)header.payload_size) {
-			/* Separate pointers using null terminators */
 			char *cmd_ptr = payload;
 			size_t cmd_len = strlen(cmd_ptr);
-			
-			char *out_ptr = NULL;
-			if (cmd_len + 1 < header.payload_size) {
-				out_ptr = payload + cmd_len + 1;
-			}
-
-			/* Save to SQLite */
-			sq_db_save_backlog(&header.context, cmd_ptr, out_ptr);
-			
+			char *out_ptr = (cmd_len + 1 < header.payload_size) ? payload + cmd_len + 1 : NULL;
+			sq_db_save_backlog(ctx_server, &header.context, cmd_ptr, out_ptr);
 			printf("[LOGGED] %s (Output: %zu bytes)\n", cmd_ptr, out_ptr ? strlen(out_ptr) : 0);
 		}
 		sq_free(payload);

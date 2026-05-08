@@ -2,7 +2,7 @@ include ../config.mk
 
 INCLUDES := -Iinclude $(COMMON_INCLUDES) -I../shell/include
 LDLIBS   := -lpthread -lsqlite3
-BIN      := ../sq_server
+BIN      := sq_server
 
 SRCS     := $(shell find src -name "*.c")
 ALL_SRCS := $(SRCS) $(COMMON_SRCS)
