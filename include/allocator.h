@@ -32,31 +32,6 @@ typedef struct {
 } sq_arena_t;
 
 /**
- * Sizes
- */
-constexpr size_t SQ_NULL_LENGTH = 0;
-constexpr size_t SQ_SIZE_BLOCK_DEFAULT = 1024;
-constexpr size_t SQ_SIZE_BLOCK_META = offsetof(sq_arena_block_t, data);
-
-/**
- * Return Flags
- */
-constexpr sq_u16_t SQ_ARENA_SUCCESS = 0x0000;
-constexpr sq_u16_t SQ_ARENA_ABORT_RESET = 0x0001;
-constexpr sq_u16_t SQ_ARENA_FAILURE_RESOURCE_HELD = 0x0002;
-
-/**
- * Argument Flags
- */
-constexpr bool SQ_ARENA_REQUEST_RESET_OFFSET = true;
-constexpr bool SQ_ARENA_FORCE_DESTROY = true;
-
-/* Paging size */
-static inline size_t sq_align(size_t size) {
-	return (size + 15) & ~15;
-}
-
-/**
  * When failed exit safely or return NULL with writing message to error log.
  */
 SQ_NODISCARD void *sq_malloc(size_t size);

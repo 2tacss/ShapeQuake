@@ -1,6 +1,7 @@
 #ifndef SQ_PROTOCOL_H
 #define SQ_PROTOCOL_H
 
+#include "defines.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <termios.h>
@@ -24,17 +25,18 @@ typedef enum {
 
 /* Packet types for routing within the middleware */
 typedef enum {
-	SQ_CAT_EXEC_LOG = 0x1000,      /* Command execution data and metadata */
-	SQ_CAT_EXEC_RESULT = 0x2000,  /* Command execution result output */
-	SQ_CAT_HEARTBEAT = 0x3000,   /* Keep-alive for persistent connections */
-	SQ_CAT_NOTIFY = 0x4000,     /* General notification message */
-	SQ_CAT_UI = 0x5000,        /* Node UI Information */
-	SQ_CAT_SYS_INFO = 0x7000, /* System metrics (CPU, Mem) for UI display */
-	SQ_CAT_ERR_LOG = 0xE000, /* Standard error (stderr) output */
+	SQ_CAT_EXEC_LOG = 	0x1000,   /* Command execution data and metadata      */
+	SQ_CAT_SEND = 		0x2000,   /* Command execution result output          */
+	SQ_CAT_HEARTBEAT = 	0x3000,   /* Keep-alive for persistent connections    */
+	SQ_CAT_NOTIFY = 	0x4000,   /* General notification message             */
+	SQ_CAT_UI = 		0x5000,   /* Node UI Information                      */
+	SQ_CAT_SYS_INFO = 	0x7000,   /* System metrics (CPU, Mem) for UI display */
+	SQ_CAT_ERR_LOG = 	0xE000,   /* Standard error (stderr) output           */
 
-	SQ_TYPE_OVERVIEW = 0x2001,
-	SQ_TYPE_GEOMETRY = 0x5001,    // Request for window shape calculation
+	SQ_TYPE_OVERVIEW = 	0x2001,
+	SQ_TYPE_GEOMETRY = 	0x5001,    // Request for window shape calculation
 } sq_packet_type_t;
+
 
 /**
  * Main node `Overview` UI Content

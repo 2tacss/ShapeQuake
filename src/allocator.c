@@ -225,9 +225,9 @@ bool sq_block_shred(sq_arena_block_t *block, bool request_reset_offset) {
 }
 
 sq_u16_t sq_arena_destroy(sq_arena_t *arena, bool force_destory) {
-	if (!arena) return SQ_NULL_PTR;
+	if (!arena) return (SQ_RETURN_CAT_ARENA | SQ_NULL_VAL);
 	if (!force_destory && ((arena->contains_db_handle || arena->contains_fd))) {
-		return SQ_ARENA_FAILURE_RESOURCE_HELD;
+		return (SQ_RETURN_CAT_ARENA | SQ_ARENA_FAILURE_RESOURCE_HELD);
 	}
 
 	sq_arena_block_t *block = arena->head;
@@ -238,5 +238,5 @@ sq_u16_t sq_arena_destroy(sq_arena_t *arena, bool force_destory) {
 		block = next;
 	}
 	sq_free(arena);
-	return SQ_ARENA_SUCCESS;
+	return (SQ_RETURN_CAT_ARENA | SQ_SUCCESS);
 }
