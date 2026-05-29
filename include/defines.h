@@ -18,8 +18,10 @@
 /**
  * Data Sizez
  */
-typedef uint16_t sq_u16_t;
 typedef uint8_t byte;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t stat_raw;
 
 
 /**
