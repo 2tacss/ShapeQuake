@@ -69,5 +69,20 @@ static inline sq_u16_t sq_what_return_category(sq_status_t status) {
 	}
 }
 
+static inline void sq_handle_status_exception(sq_status_t result) {
+	switch (result.cat) {
+		case CAT_SQ:
+			if (result.code == SQ_INVALID_SIZE.code) {
+			}
+			break;
+		case CAT_ARENA:
+			break;
+		case CAT_RESPONSE:
+			break;
+		default:
+			break;
+	}
+}
+
 
 #endif
