@@ -5,18 +5,26 @@
 #include <stddef.h>
 
 typedef enum : sq_u16_t {
-	CAT_NONE = 0x1,
-	CAT_SQ = 0xA,
-	CAT_ARENA = 0xB,
-	CAT_RESPONSE = 0xC,
-	CAT_VALUE = 0xD,
+	CAT_NONE = 0x01,
+	CAT_ARENA = 0xA0,
+	CAT_RESPONSE = 0xB0,
+	CAT_VALUE = 0xC0,
+	CAT_SERVER = 0xD0,
+	CAT_CLIENT = 0xE0,
+	CAT_MAINFRAME = 0xF0,
+	CAT_SHELL = 0x10,
+	CAT_TARMINAL = 0x20,
+	CAT_NODE_MAIN = 0x30,
+	CAT_NODE_MAIN_OVERVIEW = 0x31,
+	CAT_NODE_SUB = 0x40,
+	
 } sq_return_cat;
 
 typedef union {
 	sq_u16_t raw;
 	struct {
-		sq_u16_t code : 12;
-		sq_return_cat cat : 4;
+		sq_u16_t code : 8;
+		sq_return_cat cat : 8;
 	};
 } sq_status_t;
 
