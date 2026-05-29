@@ -1,4 +1,6 @@
 #include "allocator.h"
+#include "common.h"
+#include "defines.h"
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,7 +44,6 @@ void sq_free(void *ptr) {
 		free(ptr);
 	}
 }
-
 
 /**
  * Arena Management
@@ -137,25 +138,35 @@ void *sq_arena_alloc(sq_arena_t *arena, size_t size) {
 	return sq_arena_allocate_raw(arena, size);
 }
 
-void *sq_arena_alloc_fd(sq_arena_t *arena, size_t size) {
-	sq_arena_t *ptr = (sq_arena_t *)sq_arena_allocate_raw(arena, size);
-	ptr->contains_fd = true;
-	ptr->contains_db_handle = false;
-	return (void *)ptr;
+sq_u16_t sq_arena_set_contains_fd(sq_arena_t *arena, bool require_set) {
+	if (!arena) {
+		return (SQ_RETURN_CAT_ARENA | SQ_NULL_VAL);
+	}
+
+	arena->contains_fd = require_set;
+
+	return (SQ_RETURN_CAT_ARENA | SQ_SUCCESS);
 }
 
-void *sq_arena_alloc_db_connection(sq_arena_t *arena, size_t size) {
-	sq_arena_t *ptr = (sq_arena_t *)sq_arena_allocate_raw(arena, size);
-	ptr->contains_db_handle = true;
-	ptr->contains_fd = false;
-	return (void *)ptr;
+sq_u16_t sq_arena_set_contains_db_connection(sq_arena_t *arena, bool require_set) {
+	if (!arena) {
+		return (SQ_RETURN_CAT_ARENA | SQ_NULL_VAL);
+	}
+
+	arena->contains_db_handle = require_set;
+
+	return (SQ_RETURN_CAT_ARENA | SQ_SUCCESS);
 }
 
-void *sq_arena_alloc_resources(sq_arena_t *arena, size_t size) {
-	sq_arena_t *ptr = (sq_arena_t *)sq_arena_allocate_raw(arena, size);
-	ptr->contains_db_handle = true;
-	ptr->contains_fd = true;
-	return (void *)ptr;
+sq_u16_t sq_arena_set_contains_resources(sq_arena_t *arena, bool require_set) {
+	if (!arena) {
+		return (SQ_RETURN_CAT_ARENA | SQ_NULL_VAL);
+	}
+
+	arena->contains_db_handle = require_set;
+	arena->contains_fd = require_set;
+
+	return (SQ_RETURN_CAT_ARENA | SQ_SUCCESS);
 }
 
 void sq_arena_reset(sq_arena_t *arena) {

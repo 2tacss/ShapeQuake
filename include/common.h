@@ -54,4 +54,15 @@ sq_u16_t what_return_category(sq_u16_t cat) {
 	}
 }
 
+/**
+ * Argument Flags
+ */
+constexpr bool SQ_ARENA_REQUEST_RESET_OFFSET = true;
+constexpr bool SQ_ARENA_FORCE_DESTROY = true;
+
+/* Paging size */
+static inline size_t sq_align(size_t size) {
+	return (size + 15) & ~15;
+}
+
 #endif // SHAPEQUAKE_COMMON_H

@@ -1,21 +1,32 @@
 #include <stdio.h>
 #include <sqlite3.h>
+#include "common.h"
+#include "defines.h"
 #include "engine/net.h"
 #include "protocol.h"
 #include "allocator.h"
 #include "engine/storage.h"
 
 
-bool sq_db_init(sq_server_context_t *ctx_server, char *db_path) {
-	if (ctx_server == nullptr) return -1;
+bool require_db_context(sq_db_context_t *ptr) {
+	if (ptr == nullptr) return false;
+	return true;
+}
+
+bool sq_db_init(sq_db_context_t *ctx, char *db_path) {
+	if (ctx == nullptr) return -1;
+
 	
-	int rc = sqlite3_open(db_path, &ctx_server->ctx_db.h_db);
+	int rc = sqlite3_open(db_path, &ctx->h_db);
 	if (rc != SQLITE_OK) {
-		fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(ctx_server->ctx_db.h_db));
+		fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(ctx->h_db));
 		return false;
 	}
+	ctx->arena_overview_cnt = (sq_arena_t *)sq_arena_init(SQ_SIZE_BLOCK_DEFAULT);
 
-	ctx_server->ctx_db.is_open = true;
+	ctx->is_open = true;
+	ctx->is_arena_req = true;
+	sq_arena_set_contains_db_connection(ctx->arena_overview_cnt, true);
 
 	const char *sql = 
 		"CREATE TABLE IF NOT EXISTS command_logs ("
@@ -28,7 +39,7 @@ bool sq_db_init(sq_server_context_t *ctx_server, char *db_path) {
 		");";
 
 	char *err_msg = NULL;
-	rc = sqlite3_exec(ctx_server->ctx_db.h_db, sql, NULL, NULL, &err_msg);
+	rc = sqlite3_exec(ctx->h_db, sql, NULL, NULL, &err_msg);
 	if (rc != SQLITE_OK) {
 		fprintf(stderr, "SQL error: %s\n", err_msg);
 		sqlite3_free(err_msg);
@@ -38,11 +49,19 @@ bool sq_db_init(sq_server_context_t *ctx_server, char *db_path) {
 	return true;
 }
 
-void sq_db_close(sq_server_context_t *ctx_server) {
-	if (ctx_server && ctx_server->ctx_db.is_open) {
-		sqlite3_close(ctx_server->ctx_db.h_db);
-		ctx_server->ctx_db.is_open = false;
+void sq_db_close(sq_db_context_t *ctx) {
+	if (ctx && ctx->is_open) {
+		sqlite3_close(ctx->h_db);
+		ctx->is_open = false;
+		sq_arena_set_contains_db_connection(ctx->arena_overview_cnt, false);
 	}
+}
+
+sq_u16_t sq_db_close_context(sq_db_context_t *ctx, bool require_force_destroy) {
+	if (ctx && ctx->is_arena_req) {
+		return sq_arena_destroy(ctx->arena_overview_cnt, require_force_destroy);
+	}
+	return SQ_RETURN_CAT_SQ | SQ_NULL_VAL;
 }
 
 /**
@@ -83,14 +102,20 @@ void sq_load_backlog(sq_server_context_t *ctx_server) {
 		fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(ctx_server->ctx_db.h_db));
 		return;
 	}
+		int id;
+		int timestamp;
+		const byte *project_name;
+		const byte *working_dir;
+		const byte *command;
+		const byte *output;
 
 	while (sqlite3_step(stmt) == SQLITE_ROW) {
-		int id = sqlite3_column_int(stmt, 0);
-		int timestamp = sqlite3_column_bytes(stmt, 1);
-		const byte *project_name = sqlite3_column_text(stmt, 2);
-		const byte *working_dir = sqlite3_column_text(stmt, 3);
-		const byte *command = sqlite3_column_text(stmt, 4);
-		const byte *output = sqlite3_column_text(stmt, 5);
+		id = sqlite3_column_int(stmt, 0);
+		timestamp = sqlite3_column_bytes(stmt, 1);
+		project_name = sqlite3_column_text(stmt, 2);
+		working_dir = sqlite3_column_text(stmt, 3);
+		command = sqlite3_column_text(stmt, 4);
+		output = sqlite3_column_text(stmt, 5);
 	}
 	sqlite3_finalize(stmt);
 }
