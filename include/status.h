@@ -4,75 +4,97 @@
 #include <defines.h>
 #include <stddef.h>
 
+/* ==========================================================================
+ * 1. CATEGORY: bit range from 48 to 63 (max 65535)
+ * ========================================================================== */
+typedef enum : stat_raw {
+	CAT_NONE					= 0x0001ULL << 48,
+	CAT_SHELL					= 0x0010ULL << 48,
+	CAT_TERMINAL				= 0x0020ULL << 48,
+	CAT_NODE_MAIN				= 0x0030ULL << 48,
+	CAT_NODE_MAIN_OVERVIEW		= 0x0031ULL << 48,
+	CAT_NODE_SUB				= 0x0040ULL << 48,
+	CAT_SHAPE					= 0x0050ULL << 48,
+	CAT_PROG_LINE				= 0x0060ULL << 48,
+	CAT_COLOR					= 0x0070ULL << 48,
+	CAT_ARENA					= 0x00A0ULL << 48,
+	CAT_RESPONSE				= 0x00B0ULL << 48,
+	CAT_VALUE					= 0x00C0ULL << 48,
+	CAT_SERVER					= 0x00D0ULL << 48,
+	CAT_CLIENT					= 0x00E0ULL << 48,
+	CAT_MAINFRAME				= 0x00F0ULL << 48,
+} sq_cat_t;
+
+/* ==========================================================================
+ * 2. CONDITION: bit range from 32 to 47 (max 16)
+ * ========================================================================== */
+typedef enum : stat_raw {
+	CND_SUCCESS					= (1ULL << 0)  << 32,
+	CND_FAILURE					= (1ULL << 1)  << 32,
+	CND_INFO					= (1ULL << 2)  << 32,
+	CND_DEBUG					= (1ULL << 3)  << 32,
+	CND_WARN					= (1ULL << 4)  << 32,
+	CND_FATAL					= (1ULL << 5)  << 32,
+	CND_REQUIRE					= (1ULL << 6)  << 32,
+	CND_REFUSE					= (1ULL << 7)  << 32,
+	CND_DENIED					= (1ULL << 8)  << 32,
+	CND_NULL					= (1ULL << 9)  << 32,
+	CND_INVALID					= (1ULL << 10) << 32,
+	CND_INTERRUPTION			= (1ULL << 11) << 32,
+	CND_ABORT					= (1ULL << 12) << 32,
+	CND_WAIT					= (1ULL << 13) << 32,
+	CND_DEAD					= (1ULL << 14) << 32,
+	CND_RETRY					= (1ULL << 15) << 32,
+} sq_cnd_t;
+
+/* ==========================================================================
+ * 3. CODE: bit range from 0 to 31 (ID + FLG)
+ * ========================================================================== */
+typedef enum : stat_raw {
+	/* CODE_ID: (from 16 to 31) */
+	CODE_PARAM					= 0x0001ULL << 16,
+	CODE_SIZE					= 0x0002ULL << 16,
+	CODE_MAGIC					= 0x0003ULL << 16,
+	CODE_CONNECTION				= 0x0004ULL << 16,
+	CODE_FILE					= 0x0005ULL << 16,
+	CODE_DESC					= 0x0006ULL << 16,
+	CODE_INTERFACE				= 0x0007ULL << 16,
+	CODE_VALUE					= 0x0008ULL << 16,
+	CODE_SEND					= 0x0009ULL << 16,
+	CODE_RECV					= 0x000AULL << 16,
+	CODE_OPEN					= 0x000BULL << 16,
+	CODE_CLOSE					= 0x000CULL << 16,
+	CODE_READ					= 0x000DULL << 16,
+	CODE_WRITE					= 0x000EULL << 16,
+
+	/* CODE_FLG: from 0 to 15 */
+	CODE_CONTEXT				= 1ULL << 0,
+} sq_code_t;
+
+/* ==========================================================================
+ * 4. SYSTEM STATUS CONTAINER
+ * ========================================================================== */
 typedef union {
 	stat_raw raw;
 } sq_status_t;
 
 /* ==========================================================================
- * CATEGORY: bit range from 48 to 63. (max 65535)
+ * 5. BITS OVERFLOW / ALIGNMENT GUARD (C23 static_assert)
  * ========================================================================== */
-constexpr stat_raw CAT_NONE					= 0x0001ULL << 48;
-constexpr stat_raw CAT_SHELL				= 0x0010ULL << 48;
-constexpr stat_raw CAT_TARMINAL				= 0x0020ULL << 48;
-constexpr stat_raw CAT_NODE_MAIN			= 0x0030ULL << 48;
-constexpr stat_raw CAT_NODE_MAIN_OVERVIEW	= 0x0031ULL << 48;
-constexpr stat_raw CAT_NODE_SUB				= 0x0040ULL << 48;
-constexpr stat_raw CAT_SHAPE				= 0x0050ULL << 48;
-constexpr stat_raw CAT_PROG_LINE			= 0x0060ULL << 48;
-constexpr stat_raw CAT_COLOR				= 0x0070ULL << 48;
-constexpr stat_raw CAT_ARENA				= 0x00A0ULL << 48;
-constexpr stat_raw CAT_RESPONSE				= 0x00B0ULL << 48;
-constexpr stat_raw CAT_VALUE				= 0x00C0ULL << 48;
-constexpr stat_raw CAT_SERVER				= 0x00D0ULL << 48;
-constexpr stat_raw CAT_CLIENT				= 0x00E0ULL << 48;
-constexpr stat_raw CAT_MAINFRAME			= 0x00F0ULL << 48;
+static_assert((CAT_RESPONSE & 0x0000FFFFFFFFFFFFULL) == 0, "ERROR: CAT leaks into lower bits");
 
-/* ==========================================================================
- * CONDITION bit range from 32 to 47 (max 16)
- * ========================================================================== */
-constexpr stat_raw CND_SUCCESS				= (1ULL << 0)  << 32;
-constexpr stat_raw CND_FAILURE				= (1ULL << 1)  << 32;
-constexpr stat_raw CND_INFO					= (1ULL << 2)  << 32;
-constexpr stat_raw CND_DEBUG				= (1ULL << 3)  << 32;
-constexpr stat_raw CND_WARN					= (1ULL << 4)  << 32;
-constexpr stat_raw CND_FATAL				= (1ULL << 5)  << 32;
-constexpr stat_raw CND_REQUIRE				= (1ULL << 6)  << 32;
-constexpr stat_raw CND_REFUSE				= (1ULL << 7)  << 32;
-constexpr stat_raw CND_DENIED				= (1ULL << 8)  << 32;
-constexpr stat_raw CND_NULL					= (1ULL << 9)  << 32;
-constexpr stat_raw CND_INVALID				= (1ULL << 10) << 32;
-constexpr stat_raw CND_INTERRUPTION			= (1ULL << 11) << 32;
-constexpr stat_raw CND_ABORT				= (1ULL << 12) << 32;
-constexpr stat_raw CND_WAIT					= (1ULL << 13) << 32;
-constexpr stat_raw CND_DEAD					= (1ULL << 14) << 32;
-constexpr stat_raw CND_RETRY				= (1ULL << 15) << 32;
+static_assert((CND_SUCCESS & 0xFFFF0000FFFFFFFFULL) == 0, "ERROR: CND overflows 47-32bit boundary");
+static_assert((CND_INFO    & 0xFFFF0000FFFFFFFFULL) == 0, "ERROR: CND overflows 47-32bit boundary");
 
-/* ==========================================================================
- * CODE: bottom before and after bit range 48 to 64 (max 65535).
- * ========================================================================== */
-constexpr stat_raw CODE_PARAM				= 0x0001ULL << 16;
-constexpr stat_raw CODE_SIZE				= 0x0002ULL << 16;
-constexpr stat_raw CODE_MAGIC				= 0x0003ULL << 16;
-constexpr stat_raw CODE_CONNECTION			= 0x0004ULL << 16;
-constexpr stat_raw CODE_FILE				= 0x0005ULL << 16;
-constexpr stat_raw CODE_DESC				= 0x0006ULL << 16;
-constexpr stat_raw CODE_INTERFACE			= 0x0007ULL << 16;
-constexpr stat_raw CODE_VALUE				= 0x0008ULL << 16;
-constexpr stat_raw CODE_SEND				= 0x0009ULL << 16;
-constexpr stat_raw CODE_RECV				= 0x000AULL << 16;
-constexpr stat_raw CODE_OPEN				= 0x000BULL << 16;
-constexpr stat_raw CODE_CLOSE				= 0x000CULL << 16;
-constexpr stat_raw CODE_READ				= 0x000DULL << 16;
-constexpr stat_raw CODE_WRITE				= 0x000EULL << 16;
-constexpr stat_raw CODE_CONTEXT				= 0x000FULL << 16;
+static_assert((CODE_WRITE   & 0xFFFFffff00000000ULL) == 0, "ERROR: CODE_ID leaks into upper bits");
+static_assert((CODE_CONTEXT & 0xFFFFffff00000000ULL) == 0, "ERROR: CODE_FLG leaks into upper bits");
 
 constexpr stat_raw CODE_ARENA_ABORT_RESET = 0x00000010;
 constexpr stat_raw CODE_ARENA_FAILURE_RESOURCE_HELD = 0x00000020;
 constexpr stat_raw CODE_ARENA_DONE_DESTROY = 0x00000030;
 
-sq_status_t sq_asstatus(stat_raw cat, stat_raw code);
-
 void sq_handle_status_exception(sq_status_t result);
+sq_status_t sq_asstatus(sq_cat_t cat, sq_cnd_t condition, sq_code_t code);
 sq_status_t sq_init_status(stat_raw cat);
 sq_status_t sq_update_status_cat(sq_status_t status, stat_raw cat);
 sq_status_t sq_update_status_retcode(sq_status_t status, stat_raw retcode);
