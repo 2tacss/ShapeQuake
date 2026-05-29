@@ -104,16 +104,21 @@ constexpr stat_raw CODE_ARENA_ABORT_RESET = 0x00000010;
 constexpr stat_raw CODE_ARENA_FAILURE_RESOURCE_HELD = 0x00000020;
 constexpr stat_raw CODE_ARENA_DONE_DESTROY = 0x00000030;
 
-void sq_handle_status_exception(sq_status_t status);
+/* ==========================================================================
+ * STATUS GATE INTERFACE
+ * ========================================================================== */
 sq_status_t sq_asstatus(sq_cat_t cat, sq_cnd_t condition, sq_code_t code);
-sq_status_t sq_init_status(stat_raw cat);
-sq_cat_t sq_get_cat(sq_status_t st);
-sq_cnd_t sq_get_cnd(sq_status_t st);
+sq_status_t sq_init_status(sq_cat_t cat);
+sq_status_t sq_update_status_cat(sq_status_t st, sq_cat_t cat);
+sq_status_t sq_update_status_cnd(sq_status_t st, sq_cnd_t cnd);
+sq_status_t sq_update_status_code(sq_status_t st, sq_code_t code);
+sq_status_t sq_update_status_code_id(sq_status_t st, sq_code_t id);
+sq_status_t sq_update_status_code_flg(sq_status_t st, sq_code_t flg);
+sq_cat_t  sq_get_cat(sq_status_t st);
+sq_cnd_t  sq_get_cnd(sq_status_t st);
 sq_code_t sq_get_code(sq_status_t st);
 sq_code_t sq_get_code_id(sq_status_t st);
 sq_code_t sq_get_code_flg(sq_status_t st);
-sq_status_t sq_update_status_cat(sq_status_t status, stat_raw cat);
-sq_status_t sq_update_status_retcode(sq_status_t status, stat_raw retcode);
-sq_status_t sq_update_category(stat_raw cat);
+void sq_handle_status_exception(sq_status_t st);
 
 #endif
