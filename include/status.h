@@ -104,11 +104,12 @@ constexpr stat_raw CODE_ARENA_ABORT_RESET = 0x00000010;
 constexpr stat_raw CODE_ARENA_FAILURE_RESOURCE_HELD = 0x00000020;
 constexpr stat_raw CODE_ARENA_DONE_DESTROY = 0x00000030;
 
-void sq_handle_status_exception(sq_status_t result);
+void sq_handle_status_exception(sq_status_t status);
 sq_status_t sq_asstatus(sq_cat_t cat, sq_cnd_t condition, sq_code_t code);
 sq_status_t sq_init_status(stat_raw cat);
 sq_cat_t sq_get_cat(sq_status_t st);
 sq_cnd_t sq_get_cnd(sq_status_t st);
+sq_code_t sq_get_code(sq_status_t st);
 sq_code_t sq_get_code_id(sq_status_t st);
 sq_code_t sq_get_code_flg(sq_status_t st);
 sq_status_t sq_update_status_cat(sq_status_t status, stat_raw cat);
