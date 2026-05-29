@@ -1,6 +1,6 @@
 #include "allocator.h"
 #include "common.h"
-#include "defines.h"
+#include "status.h"
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -138,35 +138,35 @@ void *sq_arena_alloc(sq_arena_t *arena, size_t size) {
 	return sq_arena_allocate_raw(arena, size);
 }
 
-sq_u16_t sq_arena_set_contains_fd(sq_arena_t *arena, bool require_set) {
+sq_status_t sq_arena_set_contains_fd(sq_arena_t *arena, bool require_set) {
 	if (!arena) {
-		return (SQ_RETURN_CAT_ARENA | SQ_NULL_VAL);
+		return sq_asstatus(CAT_VALUE, RETCODE_INVALID_PARAM);
 	}
 
 	arena->contains_fd = require_set;
 
-	return (SQ_RETURN_CAT_ARENA | SQ_SUCCESS);
+	return sq_asstatus(CAT_ARENA, RETCODE_SUCCESS);
 }
 
-sq_u16_t sq_arena_set_contains_db_connection(sq_arena_t *arena, bool require_set) {
+sq_status_t sq_arena_set_contains_db_connection(sq_arena_t *arena, bool require_set) {
 	if (!arena) {
-		return (SQ_RETURN_CAT_ARENA | SQ_NULL_VAL);
+		return sq_asstatus(CAT_ARENA, RETCODE_NULL_VAL);
 	}
 
 	arena->contains_db_handle = require_set;
 
-	return (SQ_RETURN_CAT_ARENA | SQ_SUCCESS);
+	return sq_asstatus(CAT_ARENA, RETCODE_SUCCESS);
 }
 
-sq_u16_t sq_arena_set_contains_resources(sq_arena_t *arena, bool require_set) {
+sq_status_t sq_arena_set_contains_resources(sq_arena_t *arena, bool require_set) {
 	if (!arena) {
-		return (SQ_RETURN_CAT_ARENA | SQ_NULL_VAL);
+		return sq_asstatus(CAT_ARENA, RETCODE_INVALID_PARAM);
 	}
 
 	arena->contains_db_handle = require_set;
 	arena->contains_fd = require_set;
 
-	return (SQ_RETURN_CAT_ARENA | SQ_SUCCESS);
+	return sq_asstatus(CAT_ARENA, RETCODE_SUCCESS);
 }
 
 void sq_arena_reset(sq_arena_t *arena) {
@@ -235,10 +235,10 @@ bool sq_block_shred(sq_arena_block_t *block, bool request_reset_offset) {
 	return true;
 }
 
-sq_u16_t sq_arena_destroy(sq_arena_t *arena, bool force_destory) {
-	if (!arena) return (SQ_RETURN_CAT_ARENA | SQ_NULL_VAL);
+sq_status_t sq_arena_destroy(sq_arena_t *arena, bool force_destory) {
+	if (!arena) return sq_asstatus(CAT_ARENA, RETCODE_INVALID_PARAM);
 	if (!force_destory && ((arena->contains_db_handle || arena->contains_fd))) {
-		return (SQ_RETURN_CAT_ARENA | SQ_ARENA_FAILURE_RESOURCE_HELD);
+		return sq_asstatus(CAT_ARENA, RETCODE_ARENA_FAILURE_RESOURCE_HELD);
 	}
 
 	sq_arena_block_t *block = arena->head;
@@ -249,5 +249,5 @@ sq_u16_t sq_arena_destroy(sq_arena_t *arena, bool force_destory) {
 		block = next;
 	}
 	sq_free(arena);
-	return (SQ_RETURN_CAT_ARENA | SQ_SUCCESS);
+	return sq_asstatus(CAT_ARENA, RETCODE_SUCCESS);
 }

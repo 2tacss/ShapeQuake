@@ -1,4 +1,5 @@
 #include "error/sq_error.h"
+#include "defines.h"
 #include <stdio.h>
 #include <stdlib.h>
 

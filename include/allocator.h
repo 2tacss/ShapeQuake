@@ -4,8 +4,7 @@
 #include <stddef.h>
 #include "common.h"
 #include "defines.h"
-
-
+#include "status.h"
 
 typedef struct sq_arena_block {
 	unsigned short id;
@@ -55,12 +54,12 @@ void sq_free(void *ptr);
 sq_arena_t *sq_arena_init(size_t block_size);
 void *sq_arena_alloc_impl(sq_arena_t *arena, size_t size, const char *file, int line, const char *func);
 void *sq_arena_alloc(sq_arena_t *arena, size_t size);
-sq_u16_t sq_arena_set_contains_fd(sq_arena_t *arena, bool require_set);
-sq_u16_t sq_arena_set_contains_db_connection(sq_arena_t *arena, bool require_set);
-sq_u16_t sq_arena_set_contains_resources(sq_arena_t *arena, bool require_set);
+sq_status_t sq_arena_set_contains_fd(sq_arena_t *arena, bool require_set);
+sq_status_t sq_arena_set_contains_db_connection(sq_arena_t *arena, bool require_set);
+sq_status_t sq_arena_set_contains_resources(sq_arena_t *arena, bool require_set);
 size_t sq_get_amount_capacity(sq_arena_block_t *head);
 bool sq_arena_shred(sq_arena_t *arena, short id, bool request_reset_offset);
 bool sq_block_shred(sq_arena_block_t *block, bool request_reset_offset);
-sq_u16_t sq_arena_destroy(sq_arena_t *arena, bool force_destory);
+sq_status_t sq_arena_destroy(sq_arena_t *arena, bool force_destory);
 
 #endif

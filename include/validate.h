@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-
-sq_u16_t require_packect_header(sq_packet_header_t *h);
+SQ_NODISCARD
+sq_u16_t validate_packect_header(sq_packet_header_t *h);
 
 #endif
