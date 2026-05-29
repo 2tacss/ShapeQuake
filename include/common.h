@@ -32,6 +32,7 @@ constexpr sq_u16_t SQ_SUCCESS = 0x0000;
 constexpr sq_u16_t SQ_FAILURE = 0x0001;
 constexpr sq_u16_t SQ_NULL_VAL = 0x0002;
 constexpr sq_u16_t SQ_INVALID_PARAM = 0x0003;
+constexpr sq_u16_t SQ_INVALID_SIZE = 0x0008;
 constexpr sq_u16_t SQ_REQUIRE_RETRY = 0x0004;
 constexpr sq_u16_t SQ_INVALID_MAGIC = 0x0005;
 constexpr sq_u16_t SQ_CONNECTION_CLOSED = 0x0006;
