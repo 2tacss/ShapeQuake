@@ -77,11 +77,11 @@ typedef enum : stat_raw {
 /* ==========================================================================
  * BIT MASK
  * ========================================================================== */
-constexpr stat_raw SQ_MASK_CAT					= 0xFFFFULL << 48; // 48〜63bit
-constexpr stat_raw SQ_MASK_CND					= 0xFFFFULL << 32; // 32〜47bit
-constexpr stat_raw SQ_MASK_CODE_ID				= 0xFFFFULL << 16; // 16〜31bit
-constexpr stat_raw SQ_MASK_CODE_FLG				= 0xFFFFULL << 0;  //  0〜15bit
-constexpr stat_raw SQ_MASK_CODE				= 0xFFFFFFFFULL;   // Entire CODE
+constexpr stat_raw MASK_CAT					= 0xFFFFULL << 48; // 48〜63bit
+constexpr stat_raw MASK_CND					= 0xFFFFULL << 32; // 32〜47bit
+constexpr stat_raw MASK_CODE_ID				= 0xFFFFULL << 16; // 16〜31bit
+constexpr stat_raw MASK_CODE_FLG				= 0xFFFFULL << 0;  //  0〜15bit
+constexpr stat_raw MASK_CODE				= 0xFFFFFFFFULL;   // Entire CODE
 
 
 /* ==========================================================================
