@@ -52,10 +52,10 @@ void start_listening(sq_server_context_t *ctx_server) {
  * Handle data from a shell client and persist to SQLite.
  */
 void sq_handle_client_payload(sq_server_context_t *ctx_server, int client_fd) {
-	sq_header_t header;
+	sq_packet_header_t header;
 	char *ptr = (char *)&header;
 	size_t total_received = 0;
-	size_t to_receive = sizeof(sq_header_t);
+	size_t to_receive = sizeof(sq_packet_header_t);
 
 	while (total_received < to_receive) {
 		ssize_t n = recv(client_fd, ptr + total_received, to_receive - total_received, 0);
@@ -88,7 +88,7 @@ void sq_handle_client_payload(sq_server_context_t *ctx_server, int client_fd) {
 			char *cmd_ptr = payload;
 			size_t cmd_len = strlen(cmd_ptr);
 			char *out_ptr = (cmd_len + 1 < header.payload_size) ? payload + cmd_len + 1 : NULL;
-			sq_db_save_backlog(ctx_server, &header.context, cmd_ptr, out_ptr);
+			sq_db_save_backlog(ctx_server, &header.content, cmd_ptr, out_ptr);
 			printf("[LOGGED] %s (Output: %zu bytes)\n", cmd_ptr, out_ptr ? strlen(out_ptr) : 0);
 		}
 		sq_free(payload);
