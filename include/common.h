@@ -21,37 +21,47 @@
 constexpr size_t SQ_NULL_LENGTH = 0;
 constexpr size_t SQ_SIZE_BLOCK_DEFAULT = 1024;
 
-/**
- * Return Flags
- */
-constexpr sq_u16_t SQ_RETURN_CAT_NON_CATEGORY = 0x1111;
-constexpr sq_u16_t SQ_RETURN_CAT_SQ = 0xA000;
-constexpr sq_u16_t SQ_RETURN_CAT_ARENA = 0xB000;
-constexpr sq_u16_t SQ_RETURN_CAT_RESPONSE = 0xC000;
-constexpr sq_u16_t SQ_SUCCESS = 0x0000;
-constexpr sq_u16_t SQ_FAILURE = 0x0001;
-constexpr sq_u16_t SQ_NULL_VAL = 0x0002;
-constexpr sq_u16_t SQ_INVALID_PARAM = 0x0003;
-constexpr sq_u16_t SQ_INVALID_SIZE = 0x0008;
-constexpr sq_u16_t SQ_REQUIRE_RETRY = 0x0004;
-constexpr sq_u16_t SQ_INVALID_MAGIC = 0x0005;
-constexpr sq_u16_t SQ_CONNECTION_CLOSED = 0x0006;
-constexpr sq_u16_t SQ_SEND_FAILED = 0x0007;
-
-constexpr sq_u16_t SQ_ARENA_SUCCESS = 0x0000;
-constexpr sq_u16_t SQ_ARENA_ABORT_RESET = 0x0010;
-constexpr sq_u16_t SQ_ARENA_FAILURE_RESOURCE_HELD = 0x0020;
 
 /**
- * Return Flag Extractor
+ * Return Flags (Type Safety)
  */
-sq_u16_t what_return_category(sq_u16_t cat) {
-	if (SQ_RETURN_CAT_SQ == (SQ_RETURN_CAT_SQ & cat)) {
-		return SQ_RETURN_CAT_SQ;
-	} else if (SQ_RETURN_CAT_ARENA == (SQ_RETURN_CAT_ARENA & cat)) {
-		return SQ_RETURN_CAT_ARENA;
-	} else {
-		return SQ_RETURN_CAT_NON_CATEGORY;
+typedef union {
+	sq_u16_t raw;
+	struct {
+		sq_u16_t code : 12;
+		sq_u16_t cat : 4;
+	};
+} sq_status_t;
+
+enum : sq_u16_t {
+	CAT_NONE = 0x1,
+	CAT_SQ = 0xA,
+	CAT_ARENA = 0xB,
+	CAT_RESPONSE = 0xC,
+};
+
+#define SQ_MAKE_STATUS(c, v) ((sq_status_t){ .cat = (c), .code = (v) })
+
+constexpr sq_status_t SQ_SUCCESS = SQ_MAKE_STATUS(CAT_SQ, 0x000);
+constexpr sq_status_t SQ_FAILURE = SQ_MAKE_STATUS(CAT_SQ, 0x001);
+constexpr sq_status_t SQ_NULL_VAL = SQ_MAKE_STATUS(CAT_SQ, 0x002);
+constexpr sq_status_t SQ_INVALID_PARAM = SQ_MAKE_STATUS(CAT_SQ, 0x003);
+constexpr sq_status_t SQ_INVALID_SIZE = SQ_MAKE_STATUS(CAT_SQ, 0x008);
+constexpr sq_status_t SQ_REQUIRE_RETRY = SQ_MAKE_STATUS(CAT_SQ, 0x004);
+constexpr sq_status_t SQ_INVALID_MAGIC = SQ_MAKE_STATUS(CAT_SQ, 0x005);
+constexpr sq_status_t SQ_CONNECTION_CLOSED = SQ_MAKE_STATUS(CAT_SQ, 0x006);
+constexpr sq_status_t SQ_SEND_FAILED = SQ_MAKE_STATUS(CAT_SQ, 0x007);
+
+constexpr sq_status_t SQ_ARENA_SUCCESS = SQ_MAKE_STATUS(CAT_ARENA, 0x000);
+constexpr sq_status_t SQ_ARENA_ABORT_RESET = SQ_MAKE_STATUS(CAT_ARENA, 0x010);
+constexpr sq_status_t SQ_ARENA_FAILURE_RESOURCE_HELD = SQ_MAKE_STATUS(CAT_ARENA, 0x020);
+
+static inline sq_u16_t sq_what_return_category(sq_status_t status) {
+	switch (status.cat) {
+		case CAT_SQ: return 0xA000;
+		case CAT_ARENA: return 0xB000;
+		case CAT_RESPONSE: return 0xC000;
+		default: return 0x1111;
 	}
 }
 
