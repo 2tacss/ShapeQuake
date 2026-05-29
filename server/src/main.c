@@ -26,6 +26,11 @@ static void handle_sigint(int sig) {
 }
 
 int main(void) {
+	sq_server_context_t *ctx = sq_server_init_context();
+	sq_server_close_context(ctx, true);
+	free(ctx);
+	exit(EXIT_SUCCESS);
+	
 	int epoll_fd;
 	sq_arena_t *server_arena;
 	sq_server_context_t *ctx_server;
@@ -71,7 +76,7 @@ int main(void) {
 	sq_db_close(ctx_server);
 	close(ctx_server->h_sock.fd);
 	unlink(SQ_SOCKET_PATH);
-	sq_arena_destroy(server_arena);
+	sq_arena_destroy(server_arena, SQ_ARENA_REQUEST_RESET_OFFSET);
 	printf("\nShutdown safely.\n");
 
 	return 0;

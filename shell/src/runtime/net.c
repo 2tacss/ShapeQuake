@@ -31,7 +31,6 @@ int get_server_connection(void) {
 	return -1;
 }
 
-
 /**
  * Send header to middleware server.
  * Header struct contains information for `backlog` using for Main node, Overview.
@@ -49,9 +48,16 @@ void sq_send_backlog(sq_shell_t *shell, const char *output, size_t output_len) {
 
 	sq_header_t header = {
 		.magic = SQ_MAGIC,
-		.type = SQ_TYPE_EXEC_RESULT,
+		.type = SQ_CAT_EXEC_RESULT | SQ_TYPE_OVERVIEW,
 		.payload_size = (uint32_t)full_payload_size,
-		.context = { .timestamp = (uint64_t)time(nullptr) }
+//		.context = { .timestamp = (uint64_t)time(nullptr) }
+	};
+
+
+	sq_body_t body = {0};
+	body.content = {
+			.timestamp = (uint64_t)time(nullptr),
+		}
 	};
 
 	/* Set environment context info */
