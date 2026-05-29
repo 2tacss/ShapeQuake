@@ -5,7 +5,7 @@
 #include <stddef.h>
 
 /* ==========================================================================
- * 1. CATEGORY: bit range from 48 to 63 (max 65535)
+ * CATEGORY: bit range from 48 to 63 (max 65535)
  * ========================================================================== */
 typedef enum : stat_raw {
 	CAT_NONE					= 0x0001ULL << 48,
@@ -25,8 +25,9 @@ typedef enum : stat_raw {
 	CAT_MAINFRAME				= 0x00F0ULL << 48,
 } sq_cat_t;
 
+
 /* ==========================================================================
- * 2. CONDITION: bit range from 32 to 47 (max 16)
+ * CONDITION: bit range from 32 to 47 (max 16)
  * ========================================================================== */
 typedef enum : stat_raw {
 	CND_SUCCESS					= (1ULL << 0)  << 32,
@@ -47,8 +48,9 @@ typedef enum : stat_raw {
 	CND_RETRY					= (1ULL << 15) << 32,
 } sq_cnd_t;
 
+
 /* ==========================================================================
- * 3. CODE: bit range from 0 to 31 (ID + FLG)
+ * CODE: bit range from 0 to 31 (ID + FLG)
  * ========================================================================== */
 typedef enum : stat_raw {
 	/* CODE_ID: (from 16 to 31) */
@@ -71,21 +73,30 @@ typedef enum : stat_raw {
 	CODE_CONTEXT				= 1ULL << 0,
 } sq_code_t;
 
+
 /* ==========================================================================
- * 4. SYSTEM STATUS CONTAINER
+ * BIT MASK
+ * ========================================================================== */
+constexpr stat_raw SQ_MASK_CAT					= 0xFFFFULL << 48; // 48〜63bit
+constexpr stat_raw SQ_MASK_CND					= 0xFFFFULL << 32; // 32〜47bit
+constexpr stat_raw SQ_MASK_CODE_ID				= 0xFFFFULL << 16; // 16〜31bit
+constexpr stat_raw SQ_MASK_CODE_FLG				= 0xFFFFULL << 0;  //  0〜15bit
+constexpr stat_raw SQ_MASK_CODE				= 0xFFFFFFFFULL;   // Entire CODE
+
+
+/* ==========================================================================
+ * SYSTEM STATUS CONTAINER
  * ========================================================================== */
 typedef union {
 	stat_raw raw;
 } sq_status_t;
 
 /* ==========================================================================
- * 5. BITS OVERFLOW / ALIGNMENT GUARD (C23 static_assert)
+ * BITS OVERFLOW / ALIGNMENT GUARD (C23 static_assert)
  * ========================================================================== */
 static_assert((CAT_RESPONSE & 0x0000FFFFFFFFFFFFULL) == 0, "ERROR: CAT leaks into lower bits");
-
 static_assert((CND_SUCCESS & 0xFFFF0000FFFFFFFFULL) == 0, "ERROR: CND overflows 47-32bit boundary");
 static_assert((CND_INFO    & 0xFFFF0000FFFFFFFFULL) == 0, "ERROR: CND overflows 47-32bit boundary");
-
 static_assert((CODE_WRITE   & 0xFFFFffff00000000ULL) == 0, "ERROR: CODE_ID leaks into upper bits");
 static_assert((CODE_CONTEXT & 0xFFFFffff00000000ULL) == 0, "ERROR: CODE_FLG leaks into upper bits");
 
@@ -96,6 +107,10 @@ constexpr stat_raw CODE_ARENA_DONE_DESTROY = 0x00000030;
 void sq_handle_status_exception(sq_status_t result);
 sq_status_t sq_asstatus(sq_cat_t cat, sq_cnd_t condition, sq_code_t code);
 sq_status_t sq_init_status(stat_raw cat);
+sq_cat_t sq_get_cat(sq_status_t st);
+sq_cnd_t sq_get_cnd(sq_status_t st);
+sq_code_t sq_get_code_id(sq_status_t st);
+sq_code_t sq_get_code_flg(sq_status_t st);
 sq_status_t sq_update_status_cat(sq_status_t status, stat_raw cat);
 sq_status_t sq_update_status_retcode(sq_status_t status, stat_raw retcode);
 sq_status_t sq_update_category(stat_raw cat);
