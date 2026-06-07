@@ -5,20 +5,6 @@
 #include <stddef.h>
 
 
-
-/**
- * Sizes
- */
-constexpr size_t NULL_LENGTH = 0;
-constexpr size_t SIZE_BLOCK_DEFAULT = 1024;
-
-/**
- * Argument Flags
- */
-constexpr bool ARENA_REQUEST_RESET_OFFSET = true;
-constexpr bool ARENA_FORCE_DESTROY = true;
-
-
 /* ==========================================================================
  * CATEGORY: bit range from 48 to 63 (max 65535)
  * ========================================================================== */
@@ -135,6 +121,9 @@ constexpr stat_raw CODE_ARENA_FAILURE_RESOURCE_HELD = 0x00000020;
 constexpr stat_raw CODE_ARENA_DONE_DESTROY = 0x00000030;
 
 
+/* ==========================================================================
+ * STATIC INLINES
+ * ========================================================================== */
 [[nodiscard]]
 static inline cat_t get_cat(status_t status) {
     // 48〜63bit
@@ -168,7 +157,7 @@ static inline code_t get_code_flg(status_t status) {
 /* ==========================================================================
  * STATUS GATE INTERFACE
  * ========================================================================== */
-status_t asstatus(cat_t cat, cnd_t condition, code_t code);
+[[nodiscard]] status_t asstatus(cat_t cat, cnd_t condition, code_t code);
 status_t init_status(cat_t cat);
 status_t update_status_cat(status_t st, cat_t cat);
 status_t update_status_cnd(status_t st, cnd_t cnd);

@@ -11,6 +11,20 @@ static inline size_t align(size_t size) {
 	return (size + 15) & ~15;
 }
 
+/**
+ * Sizes
+ */
+constexpr size_t NULL_LENGTH = 0;
+constexpr size_t SIZE_BLOCK_DEFAULT = 1024;
+constexpr size_t SIZE_ARENA_DEFAULT = 1024;
+
+/**
+ * Argument Flags
+ */
+constexpr bool ARENA_REQUEST_RESET_OFFSET = true;
+constexpr bool ARENA_FORCE_DESTROY = true;
+
+
 typedef struct  heap_tracker_t {
 	size_t active;
 	size_t allocated;
