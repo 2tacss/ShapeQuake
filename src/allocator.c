@@ -24,6 +24,11 @@ static arena_block_t *arena_new_block(size_t size) {
 	arena_block_t *block = malloc(total_size);
 	if (!block) return nullptr;
 
+	unsigned char *ptr = (unsigned char *)block;
+	for (size_t i = 0; i < total_size; i++) {
+		ptr[i] = 0;
+	}
+
 	block->id = 0;
 	block->is_wiped = false;
 	block->next = nullptr;
