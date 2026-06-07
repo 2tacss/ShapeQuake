@@ -40,6 +40,7 @@ typedef enum : stat_raw {
 	CAT_MAINFRAME				= 0x00F0ULL << 48,
 	CAT_PROCESS					= 0x0A00ULL << 48,
 	CAT_THREAD					= 0x0B00ULL << 48,
+	CAT_HEAP					= 0x0F00ULL << 48,
 	
 	CAT_JOB						= 0x0C00ULL << 48,
 	CAT_LOGGER					= 0x0D00ULL << 48,
