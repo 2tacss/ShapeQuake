@@ -196,7 +196,7 @@ status_t block_shred(arena_block_t *block, bool request_reset_offset) {
 status_t arena_destroy(arena_t *arena, bool force_destory) {
 	if (!arena) return asstatus(CAT_ARENA, CND_FATAL, CODE_PARAM);
 	if (!force_destory && ((arena->contains_db_handle || arena->contains_fd))) {
-		return asstatus(CAT_ARENA, CODE_ARENA_FAILURE_RESOURCE_HELD);
+		return asstatus(CAT_ARENA, CND_FAILURE, CODE_ARENA_FAILURE_RESOURCE_HELD);
 	}
 
 	arena_block_t *block = arena->head;
