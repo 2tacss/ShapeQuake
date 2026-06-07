@@ -41,6 +41,7 @@ typedef enum : stat_raw {
 	CAT_PROCESS					= 0x0A00ULL << 48,
 	CAT_THREAD					= 0x0B00ULL << 48,
 	CAT_HEAP					= 0x0F00ULL << 48,
+	CAT_HEAP_TRACKER			= 0x0F10ULL << 48,
 	
 	CAT_JOB						= 0x0C00ULL << 48,
 	CAT_LOGGER					= 0x0D00ULL << 48,
@@ -94,6 +95,9 @@ typedef enum : stat_raw {
 	CODE_CLEAR					= 0x0010ULL << 16,
 	CODE_DESTROY				= 0x0020ULL << 16,
 	CODE_FREE					= 0x0030ULL << 16,
+	CODE_CALCULATION			= 0x0040ULL << 16,
+	CODE_EXIST					= 0x0050ULL << 16,
+	CODE_NO_EXIST					= 0x0051ULL << 16,
 
 	/* CODE_FLG: from 0 to 15 */
 	CODE_CONTEXT				= 1ULL << 0,
