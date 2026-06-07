@@ -23,7 +23,12 @@ typedef enum : stat_raw {
 	CAT_SERVER					= 0x00D0ULL << 48,
 	CAT_CLIENT					= 0x00E0ULL << 48,
 	CAT_MAINFRAME				= 0x00F0ULL << 48,
-} sq_cat_t;
+	CAT_PROCESS					= 0x0A00ULL << 48,
+	CAT_THREAD					= 0x0B00ULL << 48,
+	
+	CAT_JOB						= 0x0C00ULL << 48,
+	CAT_LOGGER					= 0x0D00ULL << 48,
+	CAT_VIEW					= 0x0E00ULL << 48,
 
 
 /* ==========================================================================
@@ -60,7 +65,7 @@ typedef enum : stat_raw {
 	CODE_CONNECTION				= 0x0004ULL << 16,
 	CODE_FILE					= 0x0005ULL << 16,
 	CODE_DESC					= 0x0006ULL << 16,
-	CODE_INTERFACE				= 0x0007ULL << 16,
+	CODE_SET					= 0x0007ULL << 16,
 	CODE_VALUE					= 0x0008ULL << 16,
 	CODE_SEND					= 0x0009ULL << 16,
 	CODE_RECV					= 0x000AULL << 16,
@@ -68,6 +73,9 @@ typedef enum : stat_raw {
 	CODE_CLOSE					= 0x000CULL << 16,
 	CODE_READ					= 0x000DULL << 16,
 	CODE_WRITE					= 0x000EULL << 16,
+	CODE_ALLOC					= 0x000FULL << 16,
+	CODE_CLEAR					= 0x0010ULL << 16,
+	CODE_DESTROY					= 0x0020ULL << 16,
 
 	/* CODE_FLG: from 0 to 15 */
 	CODE_CONTEXT				= 1ULL << 0,
