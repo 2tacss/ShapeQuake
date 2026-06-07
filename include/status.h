@@ -83,10 +83,12 @@ typedef enum : stat_raw {
 	CODE_FREE					= 0x0030ULL << 16,
 	CODE_CALCULATION			= 0x0040ULL << 16,
 	CODE_EXIST					= 0x0050ULL << 16,
-	CODE_NO_EXIST					= 0x0051ULL << 16,
+	CODE_NO_EXIST				= 0x0051ULL << 16,
+	CODE_FOUND					= 0x0060ULL << 16,
+	CODE_NOT_FOUND				= 0x0061ULL << 16,
 
 	/* CODE_FLG: from 0 to 15 */
-	CODE_CONTEXT				= 1ULL << 0,
+//	CODE_CONTEXT				= 1ULL << 0,
 } code_t;
 
 
