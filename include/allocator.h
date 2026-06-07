@@ -19,7 +19,7 @@ typedef struct arena_block {
 	struct arena_block *prev;
 	size_t offset;
 	size_t capacity;
-	alignas(16) char data[];
+	alignas(16) unsigned char data[];
 } arena_block_t;
 
 typedef struct {
