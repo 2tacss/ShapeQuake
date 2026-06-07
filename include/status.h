@@ -92,7 +92,8 @@ typedef enum : stat_raw {
 	CODE_WRITE					= 0x000EULL << 16,
 	CODE_ALLOC					= 0x000FULL << 16,
 	CODE_CLEAR					= 0x0010ULL << 16,
-	CODE_DESTROY					= 0x0020ULL << 16,
+	CODE_DESTROY				= 0x0020ULL << 16,
+	CODE_FREE					= 0x0030ULL << 16,
 
 	/* CODE_FLG: from 0 to 15 */
 	CODE_CONTEXT				= 1ULL << 0,
