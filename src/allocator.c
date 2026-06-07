@@ -6,6 +6,9 @@
 #include <string.h>
 #include <stdio.h>
 
+/********************
+ * Static Functions *
+ ********************/
 static arena_block_t *get_arena(arena_block_t *block_head, unsigned short id) {
 	if (!block_head) return nullptr;
 
@@ -21,11 +24,12 @@ static arena_block_t *get_arena(arena_block_t *block_head, unsigned short id) {
 
 static arena_block_t *arena_new_block(size_t size) {
 	size_t total_size = sizeof(arena_block_t) + size;
-	arena_block_t *block = malloc(total_size);
+	size_t aligned = align(total_size);
+	arena_block_t *block = malloc(aligned);
 	if (!block) return nullptr;
 
-	unsigned char *ptr = (unsigned char *)block;
-	for (size_t i = 0; i < total_size; i++) {
+	volatile unsigned char *ptr = (volatile unsigned char *)block;
+	for (size_t i = 0; i < aligned; i++) {
 		ptr[i] = 0;
 	}
 
@@ -38,11 +42,14 @@ static arena_block_t *arena_new_block(size_t size) {
 	return block;
 }
 
+/********************
+ * Arena Management *
+ ********************/
 arena_t *arena_init(size_t block_size) {
 	arena_t *arena = malloc(sizeof(arena_t));
 	if (!arena) return nullptr;
 
-	unsigned char *ptr = (unsigned char *)arena;
+	volatile unsigned char *ptr = (volatile unsigned char *)arena;
 	for (size_t i = 0; i < sizeof(arena_t); i++) {
 		ptr[i] = 0;
 	}
@@ -52,12 +59,10 @@ arena_t *arena_init(size_t block_size) {
 	arena->head = arena_new_block(arena->block_size);
 	if (!arena->head) {
 		free(arena);
-		exit(EXIT_FAILURE);
+		return nullptr;
 	}
 
 	arena->current = arena->head;
-	arena->contains_fd = false;
-	arena->contains_db_handle = false;
 #ifdef DEBUG
 	memset(&arena->stats, 0, sizeof(arena->stats));
 #endif
@@ -174,7 +179,7 @@ status_t arena_shred(arena_t *arena, unsigned short id, bool request_reset_offse
 
 	if (block_target == nullptr) return asstatus(CAT_ARENA, CND_ABORT, CODE_ALLOC);
 
-	volatile char *p = (volatile char *)block_target->data;
+	volatile unsigned char *p = (volatile unsigned char *)block_target->data;
 	for (size_t i = 0; i < block_target->capacity; i++) {
 		p[i] = 0;
 	}
@@ -190,7 +195,7 @@ status_t arena_shred(arena_t *arena, unsigned short id, bool request_reset_offse
 status_t block_shred(arena_block_t *block, bool request_reset_offset) {
 	if (!block) return asstatus(CAT_ARENA, CND_FATAL, CODE_PARAM);
 
-	volatile char *p = (volatile char *)block->data;
+	volatile unsigned char *p = (volatile unsigned char *)block->data;
 	for (size_t i = 0; i < block->capacity; i++) {
 		p[i] = 0;
 	}
