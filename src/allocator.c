@@ -42,12 +42,17 @@ arena_t *arena_init(size_t block_size) {
 	arena_t *arena = malloc(sizeof(arena_t));
 	if (!arena) return nullptr;
 
+	unsigned char *ptr = (unsigned char *)arena;
+	for (size_t i = 0; i < sizeof(arena_t); i++) {
+		ptr[i] = 0;
+	}
+
 	size_t bs = (block_size < 1) ? SIZE_BLOCK_DEFAULT : block_size;
 	arena->block_size = align(bs);
 	arena->head = arena_new_block(arena->block_size);
 	if (!arena->head) {
 		free(arena);
-		exit(EXIT_FAILURE);	
+		exit(EXIT_FAILURE);
 	}
 
 	arena->current = arena->head;
