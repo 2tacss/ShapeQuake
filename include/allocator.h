@@ -17,6 +17,7 @@ static inline size_t align(size_t size) {
 constexpr size_t NULL_LENGTH = 0;
 constexpr size_t SIZE_BLOCK_DEFAULT = 1024;
 constexpr size_t SIZE_ARENA_DEFAULT = 1024;
+constexpr size_t MAX_HEAPS = 20;
 
 /**
  * Argument Flags
@@ -28,6 +29,7 @@ constexpr bool ARENA_FORCE_DESTROY = true;
 typedef struct  heap_tracker_t {
 	size_t active;
 	size_t allocated;
+	unsigned char *ptr[MAX_HEAPS];
 } heap_tracker_t;
 
 typedef struct arena_block {
@@ -58,9 +60,10 @@ typedef struct {
 /*******************
  * Heap Management *
  *******************/
+void tracker_init(heap_tracker_t *tracker);
 [[nodiscard]] void *heap_alloc(heap_tracker_t *tracker, size_t size);
 status_t heap_free(heap_tracker_t *tracker, void *ptr);
-status_t heap_shutdown_check(heap_tracker_t *tracker);
+status_t tracking_health(heap_tracker_t *tracker);
 
 
 /********************
