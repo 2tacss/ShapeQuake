@@ -134,6 +134,37 @@ constexpr stat_raw CODE_ARENA_ABORT_RESET = 0x00000010;
 constexpr stat_raw CODE_ARENA_FAILURE_RESOURCE_HELD = 0x00000020;
 constexpr stat_raw CODE_ARENA_DONE_DESTROY = 0x00000030;
 
+
+[[nodiscard]]
+static inline cat_t get_cat(status_t status) {
+    // 48〜63bit
+    return (cat_t)(status.raw & MASK_CAT);
+}
+
+[[nodiscard]]
+static inline cnd_t get_cnd(status_t status) {
+    // 32〜47bit
+    return (cnd_t)(status.raw & MASK_CND);
+}
+
+[[nodiscard]]
+static inline code_t get_code(status_t status) {
+    // 0〜31bit (CODE_ID + CODE_FLG)
+    return (code_t)(status.raw & MASK_CODE);
+}
+
+[[nodiscard]]
+static inline code_t get_code_id(status_t status) {
+    // 6〜31bit (CODE_ID)
+    return (code_t)(status.raw & MASK_CODE_ID);
+}
+
+[[nodiscard]]
+static inline code_t get_code_flg(status_t status) {
+    // 0〜15bit (CODE_FLG)
+    return (code_t)(status.raw & MASK_CODE_FLG);
+}
+
 /* ==========================================================================
  * STATUS GATE INTERFACE
  * ========================================================================== */
