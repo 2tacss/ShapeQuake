@@ -11,6 +11,10 @@ static inline size_t align(size_t size) {
 	return (size + 15) & ~15;
 }
 
+typedef struct  heap_tracker_t {
+	size_t active;
+	size_t allocated;
+} heap_tracker_t;
 
 typedef struct arena_block {
 	unsigned short id;
@@ -36,27 +40,18 @@ typedef struct {
 #endif
 } arena_t;
 
-/**
- * When failed exit safely or return NULL with writing message to error log.
- */
-SQ_NODISCARD void *malloc(size_t size);
 
-/**
- * Re-Allocates.
- */
-SQ_NODISCARD void *realloc(void *ptr, size_t size);
+/*******************
+ * Heap Management *
+ *******************/
+[[nodiscard]] void *heap_alloc(heap_tracker_t *tracker, size_t size);
+status_t heap_free(heap_tracker_t *tracker, void *ptr);
+status_t heap_shutdown_check(heap_tracker_t *tracker);
 
 
-/**
- * Make duplicates strings.
- */
-SQ_NODISCARD char *strdup(const char *s);
-
-void free(void *ptr);
-
-/**
- * Arena Manage
- */
+/********************
+ * Arena Management *
+ ********************/
 arena_t *arena_init(size_t block_size);
 void *arena_alloc_impl(arena_t *arena, size_t size, const char *file, int line, const char *func);
 void *arena_alloc(arena_t *arena, size_t size);
