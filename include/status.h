@@ -4,6 +4,21 @@
 #include <defines.h>
 #include <stddef.h>
 
+
+
+/**
+ * Sizes
+ */
+constexpr size_t NULL_LENGTH = 0;
+constexpr size_t SIZE_BLOCK_DEFAULT = 1024;
+
+/**
+ * Argument Flags
+ */
+constexpr bool ARENA_REQUEST_RESET_OFFSET = true;
+constexpr bool ARENA_FORCE_DESTROY = true;
+
+
 /* ==========================================================================
  * CATEGORY: bit range from 48 to 63 (max 65535)
  * ========================================================================== */

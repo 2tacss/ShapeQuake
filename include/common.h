@@ -15,21 +15,4 @@
 #define SQ_MAYBE_UNUSED [[maybe_unused]]
 #define SQ_NO_RETURN [[noreturn]]
 
-/**
- * Sizes
- */
-constexpr size_t SQ_NULL_LENGTH = 0;
-constexpr size_t SQ_SIZE_BLOCK_DEFAULT = 1024;
-
-/**
- * Argument Flags
- */
-constexpr bool SQ_ARENA_REQUEST_RESET_OFFSET = true;
-constexpr bool SQ_ARENA_FORCE_DESTROY = true;
-
-/* Paging size */
-static inline size_t sq_align(size_t size) {
-	return (size + 15) & ~15;
-}
-
 #endif // SHAPEQUAKE_COMMON_H

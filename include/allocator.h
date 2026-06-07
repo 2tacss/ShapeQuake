@@ -6,7 +6,12 @@
 #include "defines.h"
 #include "status.h"
 
-typedef struct sq_arena_block {
+/* Paging size */
+static inline size_t align(size_t size) {
+	return (size + 15) & ~15;
+}
+
+
 	unsigned short id;
 	bool is_wiped; // data[] is or not if full zeroing by shred()
 	struct sq_arena_block *next;
