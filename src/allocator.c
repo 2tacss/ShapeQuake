@@ -61,18 +61,12 @@ status_t tracking_health(heap_tracker_t *tracker) {
 }
 
 void tracker_init(heap_tracker_t *tracker) {
-	status_t st = tracking_health(tracker);
-	if (get_cnd(st) == CND_SUCCESS) {
-		tracker->active = 0;
-		tracker->allocated = 0;
-		volatile unsigned char *ptr = (volatile unsigned char *)*tracker->ptr;
-
-		for (size_t i = 0; i < MAX_HEAPS; i++) {
-			ptr[i] = 0;
-		}
-	}
-
-	exit(EXIT_FAILURE);
+    if (!tracker) return;
+    tracker->active = 0;
+    tracker->allocated = 0;
+    for (size_t i = 0; i < MAX_HEAPS; i++) {
+        tracker->ptr[i] = nullptr;
+    }
 }
 
 void *heap_alloc(heap_tracker_t *tracker, size_t required_size) {
