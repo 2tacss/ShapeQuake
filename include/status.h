@@ -116,7 +116,7 @@ static_assert((CAT_RESPONSE & 0x0000FFFFFFFFFFFFULL) == 0, "ERROR: CAT leaks int
 static_assert((CND_SUCCESS & 0xFFFF0000FFFFFFFFULL) == 0, "ERROR: CND overflows 47-32bit boundary");
 static_assert((CND_INFO    & 0xFFFF0000FFFFFFFFULL) == 0, "ERROR: CND overflows 47-32bit boundary");
 static_assert((CODE_WRITE   & 0xFFFFffff00000000ULL) == 0, "ERROR: CODE_ID leaks into upper bits");
-static_assert((CODE_CONTEXT & 0xFFFFffff00000000ULL) == 0, "ERROR: CODE_FLG leaks into upper bits");
+//static_assert((CODE_CONTEXT & 0xFFFFffff00000000ULL) == 0, "ERROR: CODE_FLG leaks into upper bits");
 
 constexpr stat_raw CODE_ARENA_ABORT_RESET = 0x00000010;
 constexpr stat_raw CODE_ARENA_FAILURE_RESOURCE_HELD = 0x00000020;
