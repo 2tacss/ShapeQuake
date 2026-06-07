@@ -6,52 +6,10 @@
 #include <string.h>
 #include <stdio.h>
 
-void *sq_malloc(size_t size) {
-	if (size == 0) return nullptr;
-	void *ptr = malloc(size);
-	if (!ptr) {
-		perror("sq_malloc: Out of memory.");
-		return nullptr;
-	}
-	return ptr;
-}
-
-void *sq_realloc(void *ptr, size_t size) {
-	if (size == 0) {
-		sq_free(ptr);
-		return nullptr;
-	}
-	void *n_ptr = realloc(ptr, size);
-	if (!n_ptr) {
-		perror("sq_realloc: Out of memory.");
-		return nullptr;
-	}
-	return n_ptr;
-}
-
-char *sq_strdup(const char *s) {
-	if (!s) return nullptr;
-	size_t len = strlen(s) + 1;
-	char *n_s = sq_malloc(len);
-	if (n_s) {
-		memcpy(n_s, s, len);
-	}
-	return n_s;
-}
-
-void sq_free(void *ptr) {
-	if (ptr) {
-		free(ptr);
-	}
-}
-
-/**
- * Arena Management
- */
-static sq_arena_block_t *get_arena(sq_arena_block_t *block_head, unsigned short id) {
+static arena_block_t *get_arena(arena_block_t *block_head, unsigned short id) {
 	if (!block_head) return nullptr;
 
-	sq_arena_block_t *it = block_head;
+	arena_block_t *it = block_head;
 	while (it) {
 		if (it->id == id) {
 			return it;
@@ -61,9 +19,9 @@ static sq_arena_block_t *get_arena(sq_arena_block_t *block_head, unsigned short 
 	return nullptr;
 }
 
-static sq_arena_block_t *sq_arena_new_block(size_t size) {
-	size_t total_size = sizeof(sq_arena_block_t) + size;
-	sq_arena_block_t *block = sq_malloc(total_size);
+static arena_block_t *arena_new_block(size_t size) {
+	size_t total_size = sizeof(arena_block_t) + size;
+	arena_block_t *block = malloc(total_size);
 	if (!block) return nullptr;
 
 	block->id = 0;
@@ -75,15 +33,15 @@ static sq_arena_block_t *sq_arena_new_block(size_t size) {
 	return block;
 }
 
-sq_arena_t *sq_arena_init(size_t block_size) {
-	sq_arena_t *arena = sq_malloc(sizeof(sq_arena_t));
+arena_t *arena_init(size_t block_size) {
+	arena_t *arena = malloc(sizeof(arena_t));
 	if (!arena) return nullptr;
 
 	size_t bs = (block_size < 1) ? SQ_SIZE_BLOCK_DEFAULT : block_size;
-	arena->block_size = sq_align(bs);
-	arena->head = sq_arena_new_block(arena->block_size);
+	arena->block_size = align(bs);
+	arena->head = arena_new_block(arena->block_size);
 	if (!arena->head) {
-		sq_free(arena);
+		free(arena);
 		exit(EXIT_FAILURE);	
 	}
 
@@ -96,15 +54,15 @@ sq_arena_t *sq_arena_init(size_t block_size) {
 	return arena;
 }
 
-static inline void *sq_arena_allocate_raw(sq_arena_t *arena, size_t size) {
-	size_t aligned_size = sq_align(size);
+static inline void *arena_allocate_raw(arena_t *arena, size_t size) {
+	size_t aligned_size = align(size);
 	while (arena->current->offset + aligned_size > arena->current->capacity) {
 		if (arena->current->next) {
 			arena->current = arena->current->next;
 			arena->current->offset = 0;
 		} else {
 			size_t next_size = (aligned_size > arena->block_size) ? aligned_size : arena->block_size;
-			sq_arena_block_t *new_block = sq_arena_new_block(next_size);
+			arena_block_t *new_block = arena_new_block(next_size);
 			if (!new_block) {
 				fprintf(stderr, "[FATAL]: Out of memory.\n");
 				return nullptr;
@@ -122,8 +80,8 @@ static inline void *sq_arena_allocate_raw(sq_arena_t *arena, size_t size) {
 	return ptr;
 }
 
-void *sq_arena_alloc_impl(sq_arena_t *arena, size_t size, const char *file, int line, const char *func) {
-	void *ptr = sq_arena_allocate_raw(arena, size);
+void *arena_alloc_impl(arena_t *arena, size_t size, const char *file, int line, const char *func) {
+	void *ptr = arena_allocate_raw(arena, size);
 	if (!ptr) return nullptr;
 
 	arena->stats.last_caller = func;
@@ -134,44 +92,44 @@ void *sq_arena_alloc_impl(sq_arena_t *arena, size_t size, const char *file, int 
 	return ptr;
 }
 
-void *sq_arena_alloc(sq_arena_t *arena, size_t size) {
-	return sq_arena_allocate_raw(arena, size);
+void *arena_alloc(arena_t *arena, size_t size) {
+	return arena_allocate_raw(arena, size);
 }
 
-sq_status_t sq_arena_set_contains_fd(sq_arena_t *arena, bool require_set) {
+status_t arena_set_contains_fd(arena_t *arena, bool require_set) {
 	if (!arena) {
-		return sq_asstatus(CAT_VALUE, RETCODE_INVALID_PARAM);
+		return asstatus(CAT_VALUE, CND_FATAL, CODE_PARAM);
 	}
 
 	arena->contains_fd = require_set;
 
-	return sq_asstatus(CAT_ARENA, RETCODE_SUCCESS);
+	return asstatus(CAT_ARENA, CND_SUCCESS, CODE_SET);
 }
 
-sq_status_t sq_arena_set_contains_db_connection(sq_arena_t *arena, bool require_set) {
+status_t arena_set_contains_db_connection(arena_t *arena, bool require_set) {
 	if (!arena) {
-		return sq_asstatus(CAT_ARENA, RETCODE_NULL_VAL);
+		return asstatus(CAT_ARENA, CND_FATAL, CODE_PARAM);
 	}
 
 	arena->contains_db_handle = require_set;
 
-	return sq_asstatus(CAT_ARENA, RETCODE_SUCCESS);
+	return asstatus(CAT_ARENA, CND_SUCCESS, CODE_SET);
 }
 
-sq_status_t sq_arena_set_contains_resources(sq_arena_t *arena, bool require_set) {
+status_t arena_set_contains_resources(arena_t *arena, bool require_set) {
 	if (!arena) {
-		return sq_asstatus(CAT_ARENA, RETCODE_INVALID_PARAM);
+		return asstatus(CAT_ARENA, CND_FATAL, CODE_PARAM);
 	}
 
 	arena->contains_db_handle = require_set;
 	arena->contains_fd = require_set;
 
-	return sq_asstatus(CAT_ARENA, RETCODE_SUCCESS);
+	return asstatus(CAT_ARENA, CND_SUCCESS, CODE_SET);
 }
 
-void sq_arena_reset(sq_arena_t *arena) {
+void arena_reset(arena_t *arena) {
 	if (!arena) return;
-	sq_arena_block_t *it = arena->head;
+	arena_block_t *it = arena->head;
 	while (it) {
 		it->offset = 0;
 		it = it->next;
@@ -179,11 +137,11 @@ void sq_arena_reset(sq_arena_t *arena) {
 	arena->current = arena->head;
 }
 
-size_t sq_get_amount_capacity(sq_arena_block_t *head) {
+size_t get_amount_capacity(arena_block_t *head) {
 	if (head == nullptr) return 0;
 
 	unsigned int amount = 0;
-	sq_arena_block_t *it = head;
+	arena_block_t *it = head;
 
 	while (it) {
 		if (it->capacity < 1) {
@@ -198,13 +156,13 @@ size_t sq_get_amount_capacity(sq_arena_block_t *head) {
 /**
 * If id < 0, reference current id
 */
-bool sq_arena_shred(sq_arena_t *arena, short id, bool request_reset_offset) {
-	if (!arena) return false;
+status_t arena_shred(arena_t *arena, unsigned short id, bool request_reset_offset) {
+	if (!arena) return asstatus(CAT_ARENA, CND_FATAL, CODE_PARAM);
 
-	unsigned short id_target = (id < 0) ? arena->current->id : (unsigned short)id;
-	sq_arena_block_t *block_target = get_arena(arena->head, id_target);
+	unsigned short id_target = (id < 0) ? arena->current->id : id;
+	arena_block_t *block_target = get_arena(arena->head, id_target);
 
-	if (block_target == nullptr) return false;
+	if (block_target == nullptr) return asstatus(CAT_ARENA, CND_ABORT, CODE_ALLOC);
 
 	volatile char *p = (volatile char *)block_target->data;
 	for (size_t i = 0; i < block_target->capacity; i++) {
@@ -216,11 +174,11 @@ bool sq_arena_shred(sq_arena_t *arena, short id, bool request_reset_offset) {
 		block_target->offset = 0;
 	}
 
-	return true;
+	return asstatus(CAT_ARENA, CND_SUCCESS, CODE_CLEAR);
 }
 
-bool sq_block_shred(sq_arena_block_t *block, bool request_reset_offset) {
-	if (!block) return false;
+status_t block_shred(arena_block_t *block, bool request_reset_offset) {
+	if (!block) return asstatus(CAT_ARENA, CND_FATAL, CODE_PARAM);
 
 	volatile char *p = (volatile char *)block->data;
 	for (size_t i = 0; i < block->capacity; i++) {
@@ -232,22 +190,22 @@ bool sq_block_shred(sq_arena_block_t *block, bool request_reset_offset) {
 		block->offset = 0;
 	}
 
-	return true;
+	return asstatus(CAT_ARENA, CND_SUCCESS, CODE_CLEAR);
 }
 
-sq_status_t sq_arena_destroy(sq_arena_t *arena, bool force_destory) {
-	if (!arena) return sq_asstatus(CAT_ARENA, RETCODE_INVALID_PARAM);
+status_t arena_destroy(arena_t *arena, bool force_destory) {
+	if (!arena) return asstatus(CAT_ARENA, CND_FATAL, CODE_PARAM);
 	if (!force_destory && ((arena->contains_db_handle || arena->contains_fd))) {
-		return sq_asstatus(CAT_ARENA, RETCODE_ARENA_FAILURE_RESOURCE_HELD);
+		return asstatus(CAT_ARENA, CODE_ARENA_FAILURE_RESOURCE_HELD);
 	}
 
-	sq_arena_block_t *block = arena->head;
+	arena_block_t *block = arena->head;
 	while (block) {
-		sq_arena_block_t *next = block->next;
-		sq_block_shred(block, SQ_ARENA_REQUEST_RESET_OFFSET);
-		sq_free(block);
+		arena_block_t *next = block->next;
+		block_shred(block, ARENA_REQUEST_RESET_OFFSET);
+		free(block);
 		block = next;
 	}
-	sq_free(arena);
-	return sq_asstatus(CAT_ARENA, RETCODE_SUCCESS);
+	free(arena);
+	return asstatus(CAT_ARENA, CND_SUCCESS, CODE_DESTROY);
 }

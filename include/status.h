@@ -1,5 +1,5 @@
-#ifndef SQ_STATUS_H_
-#define SQ_STATUS_H_
+#ifndef STATUS_H_
+#define STATUS_H_
 
 #include <defines.h>
 #include <stddef.h>
@@ -44,6 +44,7 @@ typedef enum : stat_raw {
 	CAT_JOB						= 0x0C00ULL << 48,
 	CAT_LOGGER					= 0x0D00ULL << 48,
 	CAT_VIEW					= 0x0E00ULL << 48,
+} cat_t;
 
 
 /* ==========================================================================
@@ -66,7 +67,7 @@ typedef enum : stat_raw {
 	CND_WAIT					= (1ULL << 13) << 32,
 	CND_DEAD					= (1ULL << 14) << 32,
 	CND_RETRY					= (1ULL << 15) << 32,
-} sq_cnd_t;
+} cnd_t;
 
 
 /* ==========================================================================
@@ -94,7 +95,7 @@ typedef enum : stat_raw {
 
 	/* CODE_FLG: from 0 to 15 */
 	CODE_CONTEXT				= 1ULL << 0,
-} sq_code_t;
+} code_t;
 
 
 /* ==========================================================================
@@ -112,7 +113,7 @@ constexpr stat_raw MASK_CODE				= 0xFFFFFFFFULL;   // Entire CODE
  * ========================================================================== */
 typedef union {
 	stat_raw raw;
-} sq_status_t;
+} status_t;
 
 /* ==========================================================================
  * BITS OVERFLOW / ALIGNMENT GUARD (C23 static_assert)
@@ -130,18 +131,18 @@ constexpr stat_raw CODE_ARENA_DONE_DESTROY = 0x00000030;
 /* ==========================================================================
  * STATUS GATE INTERFACE
  * ========================================================================== */
-sq_status_t sq_asstatus(sq_cat_t cat, sq_cnd_t condition, sq_code_t code);
-sq_status_t sq_init_status(sq_cat_t cat);
-sq_status_t sq_update_status_cat(sq_status_t st, sq_cat_t cat);
-sq_status_t sq_update_status_cnd(sq_status_t st, sq_cnd_t cnd);
-sq_status_t sq_update_status_code(sq_status_t st, sq_code_t code);
-sq_status_t sq_update_status_code_id(sq_status_t st, sq_code_t id);
-sq_status_t sq_update_status_code_flg(sq_status_t st, sq_code_t flg);
-sq_cat_t  sq_get_cat(sq_status_t st);
-sq_cnd_t  sq_get_cnd(sq_status_t st);
-sq_code_t sq_get_code(sq_status_t st);
-sq_code_t sq_get_code_id(sq_status_t st);
-sq_code_t sq_get_code_flg(sq_status_t st);
-void sq_handle_status_exception(sq_status_t st);
+status_t asstatus(cat_t cat, cnd_t condition, code_t code);
+status_t init_status(cat_t cat);
+status_t update_status_cat(status_t st, cat_t cat);
+status_t update_status_cnd(status_t st, cnd_t cnd);
+status_t update_status_code(status_t st, code_t code);
+status_t update_status_code_id(status_t st, code_t id);
+status_t update_status_code_flg(status_t st, code_t flg);
+cat_t  get_cat(status_t st);
+cnd_t  get_cnd(status_t st);
+code_t get_code(status_t st);
+code_t get_code_id(status_t st);
+code_t get_code_flg(status_t st);
+void handle_status_exception(status_t st);
 
 #endif

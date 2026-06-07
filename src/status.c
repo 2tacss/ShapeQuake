@@ -1,67 +1,70 @@
 #include "status.h"
 #include "defines.h"
 
-sq_status_t sq_asstatus(sq_cat_t cat, sq_cnd_t condition, sq_code_t code) {
-	return (sq_status_t){ .raw = cat | condition | code };
+status_t asstatus(cat_t cat, cnd_t condition, code_t code) {
+	return (status_t){ .raw = cat | condition | code };
 }
 
-sq_status_t sq_init_status(sq_cat_t cat) {
-	return (sq_status_t){ .raw = (stat_raw)cat & MASK_CAT };
+status_t init_status(cat_t cat) {
+	return (status_t){ .raw = (stat_raw)cat & MASK_CAT };
 }
 
-sq_status_t sq_update_status_cat(sq_status_t st, sq_cat_t cat) {
+status_t update_status_cat(status_t st, cat_t cat) {
 	st.raw = (st.raw & ~MASK_CAT) | (stat_raw)cat;
 	return st;
 }
 
-sq_status_t sq_update_status_cnd(sq_status_t st, sq_cnd_t cnd) {
+status_t update_status_cnd(status_t st, cnd_t cnd) {
 	st.raw = (st.raw & ~MASK_CND) | (stat_raw)cnd;
 	return st;
 }
 
-sq_status_t sq_update_status_code(sq_status_t st, sq_code_t code) {
+status_t update_status_code(status_t st, code_t code) {
 	st.raw = (st.raw & ~MASK_CODE) | (stat_raw)code;
 	return st;
 }
 
-sq_status_t sq_update_status_code_id(sq_status_t st, sq_code_t id) {
+status_t update_status_code_id(status_t st, code_t id) {
 	st.raw = (st.raw & ~MASK_CODE_ID) | (stat_raw)id;
 	return st;
 }
 
-sq_status_t sq_update_status_code_flg(sq_status_t st, sq_code_t flg) {
+status_t update_status_code_flg(status_t st, code_t flg) {
 	st.raw = (st.raw & ~MASK_CODE_FLG) | (stat_raw)flg;
 	return st;
 }
 
-sq_cat_t sq_get_cat(sq_status_t st) {
-	return (sq_cat_t)(st.raw & MASK_CAT);
+cat_t get_cat(status_t st) {
+	return (cat_t)(st.raw & MASK_CAT);
 }
 
-sq_cnd_t sq_get_cnd(sq_status_t st) {
-	return (sq_cnd_t)(st.raw & MASK_CND);
+cnd_t get_cnd(status_t st) {
+	return (cnd_t)(st.raw & MASK_CND);
 }
 
-sq_code_t sq_get_code(sq_status_t st) {
-	return (sq_code_t)(st.raw & MASK_CODE);
+code_t get_code(status_t st) {
+	return (code_t)(st.raw & MASK_CODE);
 }
 
-sq_code_t sq_get_code_id(sq_status_t st) {
-	return (sq_code_t)(st.raw & MASK_CODE_ID);
+code_t get_code_id(status_t st) {
+	return (code_t)(st.raw & MASK_CODE_ID);
 }
 
-sq_code_t sq_get_code_flg(sq_status_t st) {
-	return (sq_code_t)(st.raw & MASK_CODE_FLG);
+code_t get_code_flg(status_t st) {
+	return (code_t)(st.raw & MASK_CODE_FLG);
 }
 
-void sq_handle_status_exception(sq_status_t st) {
-	sq_cat_t cat  = (sq_cat_t)(st.raw & MASK_CAT);
-	sq_cnd_t cnd  = (sq_cnd_t)(st.raw & MASK_CND);
-	sq_code_t code = (sq_code_t)(st.raw & MASK_CODE);
+void handle_status_exception(status_t st) {
+	cat_t cat  = (cat_t)(st.raw & MASK_CAT);
+	cnd_t cnd  = (cnd_t)(st.raw & MASK_CND);
+	code_t code = (code_t)(st.raw & MASK_CODE);
 
 	switch (cat) {
 		case CAT_ARENA:
 			if (cnd == CND_INVALID) {
+				if (CODE_ARENA_ABORT_RESET == (code & MASK_CODE_ID)) {
+					
+				}
 			}
 			break;
 
