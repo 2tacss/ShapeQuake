@@ -5,8 +5,24 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#define MAX_SHM_NAME 32
 
+
+/* ========================================================================== *
+ *  CHECK THIS OUT - VMA SHM LAYOUT                                           *
+ * ========================================================================== *
+ * Lower Addr ->   +-----------------------------------+
+ *                 |  [Protected] VMA Meta Field       | (size: vma_zone_t)
+ * Offset     ->   +-----------------------------------+
+ *                 |  Array Element [0] (Logical ID 1) | (vma_alloc start)
+ *                 |  Array Element [1] (Logical ID 2) |
+ * Higher Addr ->  +-----------------------------------+
+ *
+ * 💡 No manual offset required in higher layers.
+ * Logical IDs start from 1 (SHARED_ID_START_AT) and match slots naturally.
+ * ========================================================================== */
+
+#define MAX_SHM_NAME 32
+#define SHARED_ID_START_AT 1
 
 static inline size_t align_vma(size_t size) {
 	return (size + 15) & ~15;
