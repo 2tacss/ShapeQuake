@@ -94,8 +94,8 @@ struct pool_t {
 	int job_count;
 	int shared_job_data_count;
 	int shared_task_data_count;
-	worker_t *workers;
-	job_t *jobs;
+	worker_t **workers;
+	job_t **jobs;
     vma_zone_t *shared_job_data;
     vma_zone_t *shared_task_data;
 };
@@ -124,7 +124,7 @@ struct worker_t {
 	const pthread_t tid;
 	task_t *local_queue[MAX_LOCAL_QUEUES];
 	sem_t sem;
-	shared_task_data_t *(*shared)(common_task_t *self, int shared_data); 
+	shared_task_data_t *(*shared)(common_task_t *self, int shared_id); 
 	void (*notify_done)(common_task_t *self);
 };
 
@@ -150,13 +150,15 @@ struct job_driver_t {
 
 static inline shared_task_data_t *shared(common_task_t *self, int shared_id);
 static inline void notify_done(common_task_t *self);
-void init_shared_job_data(pool_t *pool, const char *shmname);
 void init_shared_task_data(pool_t *pool, const char *shmname);
+shared_task_data_t *get_shared_task_slot(pool_t *pool, int shared_id);
+void init_shared_job_data(pool_t *pool, const char *shmname);
+shared_job_data_t *get_shared_job_slot(pool_t *pool, int shared_id);
 pool_t *reactor_init(heap_tracker_t *tracker, int worker_count, int job_count);
-void init_worker(heap_tracker_t *tracker, pool_t *pool, int cur, int id, int pshare);
+void init_worker(heap_tracker_t *tracker, pool_t *pool, int idx_worker, int id, int pshared);
 void init_job(heap_tracker_t *tracker, pool_t *pool, const int idx_job, const int id,
               const event_from_t evfrom, const event_type_t evtype,
-              const char *shmname, const shared_job_data_t *shm,
+              const char *shmname,
               const void *table_callbacks, void *arg, void *(*on_exit)(int));
 uint64_t init_shared(shared_type_t shared_type);
 task_t *init_task(void);
