@@ -112,7 +112,6 @@ struct worker_t {
 	const pthread_t tid;
 	task_t *local_queue[MAX_LOCAL_QUEUES];
 	sem_t sem;
-	int (*worker_count)(common_task_t *self); 
 	task_shared_data_t *(*shared)(common_task_t *self, int shared_data); 
 	void (*notify_done)(common_task_t *self);
 };
@@ -130,7 +129,6 @@ struct job_t {
 	const event_type_t event_type;
 	const job_shared_data_t *shm;
 	const pid_t pid;
-	worker_t *worker;
 	const void *table_callbacks;
 	void *arg;
 
