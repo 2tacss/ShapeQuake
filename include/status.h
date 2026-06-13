@@ -24,10 +24,11 @@ typedef enum : stat_raw {
 	CAT_SERVER					= 0x00D0ULL << 48,
 	CAT_CLIENT					= 0x00E0ULL << 48,
 	CAT_MAINFRAME				= 0x00F0ULL << 48,
-	CAT_PROCESS					= 0x0A00ULL << 48,
-	CAT_THREAD					= 0x0B00ULL << 48,
-	CAT_HEAP					= 0x0F00ULL << 48,
-	CAT_HEAP_TRACKER			= 0x0F10ULL << 48,
+	CAT_PROCESS					= 0x0100ULL << 48,
+	CAT_THREAD					= 0x0200ULL << 48,
+	CAT_HEAP					= 0x0300ULL << 48,
+	CAT_HEAP_TRACKER			= 0x0310ULL << 48,
+	CAT_VMA						= 0x0400ULL << 48,
 	
 	CAT_JOB						= 0x0C00ULL << 48,
 	CAT_LOGGER					= 0x0D00ULL << 48,
@@ -161,16 +162,13 @@ static inline code_t get_code_flg(status_t status) {
  * ========================================================================== */
 [[nodiscard]] status_t asstatus(cat_t cat, cnd_t condition, code_t code);
 status_t init_status(cat_t cat);
+void setstatus(status_t *st, cat_t cat, cnd_t condition, code_t code);
+void clear_st(status_t *st);
 status_t update_status_cat(status_t st, cat_t cat);
 status_t update_status_cnd(status_t st, cnd_t cnd);
 status_t update_status_code(status_t st, code_t code);
 status_t update_status_code_id(status_t st, code_t id);
 status_t update_status_code_flg(status_t st, code_t flg);
-cat_t  get_cat(status_t st);
-cnd_t  get_cnd(status_t st);
-code_t get_code(status_t st);
-code_t get_code_id(status_t st);
-code_t get_code_flg(status_t st);
 void handle_status_exception(status_t st);
 
 #endif
