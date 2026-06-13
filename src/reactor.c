@@ -193,78 +193,130 @@ shared_job_data_t *get_shared_job_slot(pool_t *pool, int shared_id) {
     return &array[shared_id];
 }
 
+/* ========================================================================== *
+ *  MODE SWITCHING                                                            *
+ * ========================================================================== */
+pool_t *init_mode_threading(heap_tracker_t *tracker, int worker_count){
+    if (0 > worker_count || worker_count > MAX_POOLS) return nullptr;
 
     status_t st = tracking_health(tracker);
-    if (get_cnd(st) == CND_FATAL || get_cnd(st) == CND_ABORT) {
-        return nullptr;
-    }
+    if (get_cnd(st) == CND_FATAL || get_cnd(st) == CND_ABORT) return nullptr;
 
+	// Zero Cleared
     pool_t *pool = (pool_t *)heap_alloc(tracker, sizeof(pool_t));
     if (!pool) return nullptr;
 
 	int pshared = THREAD_PROCESS_NO_SHARED;
-    
-    if (worker_count > 0 && job_count <= 0) {
-        pool->workers = (worker_t *)heap_alloc(tracker, sizeof(worker_t) * worker_count);
-    } else if (worker_count <= 0 && job_count > 0) {
-        pool->jobs = (job_t *)heap_alloc(tracker, sizeof(job_t) * job_count);
-    } else if (worker_count > 0 && job_count > 0) {
-        pool->workers = (worker_t *)heap_alloc(tracker, sizeof(worker_t) * worker_count);
-        pool->jobs    = (job_t *)heap_alloc(tracker, sizeof(job_t) * job_count);
-		pshared = THREAD_PROCESS_SHARED;
-    }
 
-    if ((worker_count > 0 && !pool->workers) || (job_count > 0 && !pool->jobs)) {
-        return nullptr;
-    }
+    pool->workers = (worker_t *)heap_alloc(tracker, sizeof(worker_t) * worker_count);
+	if (!pool->workers) return nullptr;
+	pool->worker_count = worker_count;
+    for (int i = 0; i < worker_count; i++) init_worker(tracker, pool, i, i + 1, pshared);
 
-    for (int i = 0; i < worker_count; i++) {
-        init_worker(tracker, pool, i, i + 1, pshared);
-    }
+	*(int *)&pool->id = 0;
 
     return pool;
 }
 
-void init_worker(heap_tracker_t *tracker, pool_t *pool, int cur, int id, int pshare) {
+pool_t *init_mode_processing(heap_tracker_t *tracker, const int job_count) {    
+    if (0 > job_count || job_count > MAX_JOBS) return nullptr;
+
+    status_t st = tracking_health(tracker);
+    if (get_cnd(st) == CND_FATAL || get_cnd(st) == CND_ABORT) return nullptr;
+
+	// Zero Cleared
+    pool_t *pool = (pool_t *)heap_alloc(tracker, sizeof(pool_t));
+    if (!pool) return nullptr;
+
+	pool->jobs = (job_t *)heap_alloc(tracker, sizeof(job_t) * job_count);
+	if (!pool->jobs) return nullptr;
+	pool->job_count = job_count;
+    for (int i = 0; i < job_count; i++) {
+		init_job(tracker, pool, i, i + 1,
+			0, 0, nullptr, nullptr, nullptr, nullptr, nullptr);
+	}
+
+	*(int *)&pool->id = 0;
+
+    return pool;
+}
+
+pool_t *init_mode_threaded_processing(heap_tracker_t *tracker, int worker_count, int job_count) {
+    if (( 0 > worker_count || worker_count > MAX_POOLS) ||
+			(0 > job_count || job_count > MAX_JOBS)) return nullptr;
+
+    status_t st = tracking_health(tracker);
+    if (get_cnd(st) == CND_FATAL || get_cnd(st) == CND_ABORT) return nullptr;
+
+	// Zero Cleared
+    pool_t *pool = (pool_t *)heap_alloc(tracker, sizeof(pool_t));
+    if (!pool) return nullptr;
+
+	int pshared = THREAD_PROCESS_SHARED;
+    pool->jobs    = (job_t *)heap_alloc(tracker, sizeof(job_t) * job_count);
+	if (!pool->jobs) return nullptr;
+    pool->workers = (worker_t *)heap_alloc(tracker, sizeof(worker_t) * worker_count);
+	if (!pool->workers) return nullptr;
+
+	pshared = THREAD_PROCESS_SHARED;
+	pool->job_count = job_count;
+	pool->worker_count = worker_count;
+    for (int i = 0; i < job_count; i++) {
+		init_job(tracker, pool, i, i + 1,
+			0, 0, nullptr, nullptr, nullptr, nullptr, nullptr);
+		}
+    for (int i = 0; i < worker_count; i++) init_worker(tracker, pool, i, i + 1, pshared);
+
+	*(int *)&pool->id = 0;
+
+    return pool;
+}
+
+/* ========================================================================== *
+ *  THREADING                                                                 *
+ * ========================================================================== */
+status_t init_worker(heap_tracker_t *tracker, pool_t *pool, int idx_worker, int id, int pshare) {
+	status_t st = tracking_health(tracker);
+	if (CND_FATAL == get_cnd(st) || get_cnd(st) == CND_ABORT) return st;
+
     if (!pool || !pool->workers) return;
-    sem_init(&pool->workers[cur].sem, pshare, 0);
+	if (0 > idx_worker || idx_worker > pool->worker_count ||
+				id < 0 || (0 > pshare || pshare > THREAD_PROCESS_SHARED )) return;
+	
+    sem_init(&pool->workers[idx_worker].sem, pshare, 0);
 
     pthread_t tid;
-    if (pthread_create(&tid, nullptr, working_loop, &pool->workers[cur]) != 0) {
+    if (pthread_create(&tid, nullptr, working_loop, &pool->workers[idx_worker]) != 0) {
         return;
     }
 
-    *(int *)&pool->workers[cur].id = id;
-    *(pthread_t *)&pool->workers[cur].tid = tid;
-	pool->workers[cur].notify_done = notify_done;
+    *(int *)&pool->workers[idx_worker].id = id;
+    *(pthread_t *)&pool->workers[idx_worker].tid = tid;
+	pool->workers[idx_worker].shared = shared;
+	pool->workers[idx_worker].notify_done = notify_done;
 }
 
-int worker_count(common_task_t *self) {
-	if (!self) return -1;
-	task_t *task = container_of(self, task_t, super);
-	return task->pool->worker_count;
-}
 
-task_shared_data_t *shared(common_task_t *self, int shared_id) {
-	if (!self) return nullptr;
-	task_t *task = container_of(self, task_t, super);
-
-	if (0 > shared_id || shared_id > MAX_TASK_SHARED_DATA) return nullptr;
-	return task->pool->shared_task_data[shared_id];
-}
-
-void notify_done(common_task_t *self) {
-	if (!self) {
-		// FATAL: require processing exit safely
-	}
-
-	task_t *task = container_of(self, task_t, super);
-	if (task->super.fdev > -1) {
-		uint64_t flag = 1;
-		ssize_t s = write(task->super.fdev, &flag, sizeof(uint64_t));
-		if (s != sizeof(uint64_t)) {
-			// FATAL: require processing exit safely
-		}
-	}
+/* ========================================================================== *
+ *  PROCESSING                                                                *
+ * ========================================================================== */
+void init_job(heap_tracker_t *tracker, pool_t *pool, const int idx_job, const int id,
+              const event_from_t evfrom, const event_type_t evtype,
+              const char *shmname, const shared_job_data_t *shm,
+              const void *table_callbacks, void *arg, void *(*on_exit)(int)) {
+    status_t st = tracking_health(tracker);
+    if (get_cnd(st) == CND_FATAL || get_cnd(st) == CND_ABORT) return;
+    
+    if (!pool || !pool->jobs || idx_job < 0 || idx_job >= pool->job_count || id < 0) return;
+    
+    *(int *)&pool->jobs[idx_job].id = id;
+    *(const char **)&pool->jobs[idx_job].shmname = shmname;
+    *(event_from_t *)&pool->jobs[idx_job].from = evfrom;
+    *(event_type_t *)&pool->jobs[idx_job].event_type = evtype;
+    *(const job_shared_data_t **)&pool->jobs[idx_job].shm = shm;
+    
+    pool->jobs[idx_job].table_callbacks = table_callbacks;
+    pool->jobs[idx_job].arg = arg;
+    pool->jobs[idx_job].on_exit = on_exit;
 }
 

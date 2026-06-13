@@ -154,7 +154,10 @@ void init_shared_job_data(pool_t *pool);
 void init_shared_task_data(pool_t *pool);
 pool_t *reactor_init(heap_tracker_t *tracker, int worker_count, int job_count);
 void init_worker(heap_tracker_t *tracker, pool_t *pool, int cur, int id, int pshare);
-uint64_t init_job(pool_t *pool);
+void init_job(heap_tracker_t *tracker, pool_t *pool, const int idx_job, const int id,
+              const event_from_t evfrom, const event_type_t evtype,
+              const char *shmname, const shared_job_data_t *shm,
+              const void *table_callbacks, void *arg, void *(*on_exit)(int));
 uint64_t init_shared(shared_type_t shared_type);
 task_t *init_task(void);
 
