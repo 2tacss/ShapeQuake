@@ -1,7 +1,8 @@
 #ifndef _REACTOR_H
 #define _REACTOR_H
 
-#include "allocator.h"
+#include "heap.h"
+#include "vma.h"
 #include <unistd.h>
 #include <pthread.h>
 #include <stddef.h>
@@ -26,8 +27,9 @@ typedef struct worker_t worker_t;
 typedef struct pool_t pool_t;
 typedef struct job_t job_t;
 typedef struct job_driver_t job_driver_t;
-typedef struct task_shared_data_t task_shared_data_t;
-typedef struct job_shared_data_t job_shared_data_t;
+typedef struct shared_data_t shared_data_t;
+typedef struct shared_task_data_t shared_task_data_t;
+typedef struct shared_job_data_t shared_job_data_t;
 
 /******************
  * Opaque Pointers *
@@ -38,13 +40,16 @@ typedef const struct job_t *job_id_t;
 #define MAX_LOCAL_QUEUES 256
 #define MAX_JOBS 16
 #define MAX_EVENTS 160
-#define MAX_JOB_SHARED_DATA 16
-#define MAX_TASK_SHARED_DATA 16
+#define MAX_SHARED_TASK_DATA 16
+#define MAX_SHARED_JOB_DATA 16
 #define MAX_SHM 8
 #define MAX_SHM_NAME 32
 
 #define THREAD_PROCESS_SHARED 1
 #define THREAD_PROCESS_NO_SHARED 0
+
+#define NAME_VMA_SHARED_TASKS "vma_shared_tasks"
+#define NAME_VMA_SHARED_JOBS "vma_shared_jobs"
 
 enum task_type_t {
 	TASK_TYPE_SOMETHING
@@ -67,32 +72,32 @@ enum shared_type_t {
 	TYPE_SHARED_BOTH
 };
 
-typedef struct {
-	const void *data_ptr;
-	const void *list[];
-} shared_data_t;
-
-struct job_shared_data_t {
-	const int shmid;
-	const char *shmname;
-	const shared_data_t *shared;
+struct shared_data_t {
+    uintptr_t data_offset;
+    uintptr_t list[MAX_LOCAL_QUEUES];
 };
 
-struct task_shared_data_t {
-	const int id;
-	const shared_data_t *shared;
+struct shared_task_data_t {
+    const int id;
+    shared_data_t shared;
+};
+
+struct shared_job_data_t {
+    const int shmid;
+    const char *shmname;
+    shared_data_t shared;
 };
 
 struct pool_t {
 	const int id;
 	int worker_count;
 	int job_count;
-	int job_shared_count;
-	int task_shared_count;
+	int shared_job_data_count;
+	int shared_task_data_count;
 	worker_t *workers;
 	job_t *jobs;
-	job_shared_data_t *shared_job_data[MAX_JOB_SHARED_DATA];
-	task_shared_data_t *shared_task_data[MAX_TASK_SHARED_DATA];
+    vma_zone_t *shared_job_data;
+    vma_zone_t *shared_task_data;
 };
 
 struct common_task_t {
@@ -108,19 +113,19 @@ struct common_task_t {
 	const void *arg;
 };
 
+struct task_t {
+	common_task_t task_;
+	pool_t *operation_ctx;
+	worker_t *my_handler;
+};
+
 struct worker_t {
 	const int id;
 	const pthread_t tid;
 	task_t *local_queue[MAX_LOCAL_QUEUES];
 	sem_t sem;
-	task_shared_data_t *(*shared)(common_task_t *self, int shared_data); 
+	shared_task_data_t *(*shared)(common_task_t *self, int shared_data); 
 	void (*notify_done)(common_task_t *self);
-};
-
-struct task_t {
-	common_task_t super;
-	pool_t *pool;
-	worker_t *my_worker;
 };
 
 struct job_t {
@@ -128,7 +133,7 @@ struct job_t {
 	const char *shmname;
 	const event_from_t from;
 	const event_type_t event_type;
-	const job_shared_data_t *shm;
+	const shared_job_data_t *ptr;
 	const pid_t pid;
 	const void *table_callbacks;
 	void *arg;
@@ -143,9 +148,10 @@ struct job_driver_t {
 	int (*wait)(job_t *job, int *exit_code);
 };
 
-int worker_count(common_task_t *self);
-task_shared_data_t *shared(common_task_t *self, int shared_id);
-void notify_done(common_task_t *self);
+static inline shared_task_data_t *shared(common_task_t *self, int shared_id);
+static inline void notify_done(common_task_t *self);
+void init_shared_job_data(pool_t *pool);
+void init_shared_task_data(pool_t *pool);
 pool_t *reactor_init(heap_tracker_t *tracker, int worker_count, int job_count);
 void init_worker(heap_tracker_t *tracker, pool_t *pool, int cur, int id, int pshare);
 uint64_t init_job(pool_t *pool);
