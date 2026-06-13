@@ -86,6 +86,7 @@ struct task_shared_data_t {
 struct pool_t {
 	const int id;
 	int worker_count;
+	int job_count;
 	int job_shared_count;
 	int task_shared_count;
 	worker_t *workers;
