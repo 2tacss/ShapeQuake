@@ -147,6 +147,7 @@ void arena_reset(arena_t *arena) {
 	arena_block_t *it = arena->head;
 	while (it) {
 		it->offset = 0;
+		block_shred(it, ARENA_REQUEST_NO_RESET_OFFSET);
 		it = it->next;
 	}
 	arena->current = arena->head;
