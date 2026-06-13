@@ -12,6 +12,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <stdio.h>
+#include <string.h>
 
 /*
 */
@@ -151,12 +152,15 @@ const job_driver_t process_driver = {
  *  SHARED MEMORY `THREADING`                                                 *
  * ========================================================================== */
 
-void init_shared_task_data(pool_t *pool) {
-    if (!pool) return;
+void init_shared_task_data(pool_t *pool, const char *shmname) {
+    if (!pool || !shmname) return;
+
+	char shm_name[MAX_SHM_NAME] = {0};
+	strncpy(shm_name, shmname, MAX_SHM_NAME - 1);
 
     size_t total_size = sizeof(shared_task_data_t) * MAX_SHARED_TASK_DATA;
 
-    pool->shared_task_data = vma_create(NAME_VMA_SHARED_TASKS, total_size);
+    pool->shared_task_data = vma_create(shm_name, total_size);
     if (!pool->shared_task_data) return;
 
     pool->shared_task_data_count = MAX_SHARED_TASK_DATA;
@@ -173,12 +177,15 @@ shared_task_data_t *get_shared_task_slot(pool_t *pool, int shared_id) {
 /* ========================================================================== *
  *  SHARED MEMORY `PROCESSING`                                                *
  * ========================================================================== */
-void init_shared_job_data(pool_t *pool) {
-	if (!pool) return;
+void init_shared_job_data(pool_t *pool, const char *shmname) {
+	if (!pool || !shmname) return;
+
+	char shm_name[MAX_SHM_NAME] = {0};
+	strncpy(shm_name, shmname, MAX_SHM_NAME - 1);
 
 	size_t total_size = sizeof(shared_job_data_t) * MAX_SHARED_JOB_DATA;
 
-	pool->shared_job_data = vma_create(NAME_VMA_SHARED_JOBS, total_size);
+	pool->shared_job_data = vma_create(shm_name, total_size);
 	if (!pool->shared_job_data) return;
 
 	pool->shared_job_data_count = MAX_SHARED_JOB_DATA;

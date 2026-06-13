@@ -150,8 +150,8 @@ struct job_driver_t {
 
 static inline shared_task_data_t *shared(common_task_t *self, int shared_id);
 static inline void notify_done(common_task_t *self);
-void init_shared_job_data(pool_t *pool);
-void init_shared_task_data(pool_t *pool);
+void init_shared_job_data(pool_t *pool, const char *shmname);
+void init_shared_task_data(pool_t *pool, const char *shmname);
 pool_t *reactor_init(heap_tracker_t *tracker, int worker_count, int job_count);
 void init_worker(heap_tracker_t *tracker, pool_t *pool, int cur, int id, int pshare);
 void init_job(heap_tracker_t *tracker, pool_t *pool, const int idx_job, const int id,
