@@ -15,7 +15,6 @@ static inline size_t align(size_t size) {
 constexpr size_t NULL_LENGTH = 0;
 constexpr size_t SIZE_BLOCK_DEFAULT = 1024;
 constexpr size_t SIZE_ARENA_DEFAULT = 1024;
-constexpr size_t MAX_HEAPS = 20;
 
 /**
  * Argument Flags
@@ -30,10 +29,22 @@ static void *default_malloc(void *ptr, size_t size, void *ctx);
 static void default_free(void *ptr,  size_t size, void *ctx);
 
 typedef struct {
+    void *(*alloc_raw)(void *ptr, size_t size, void *ctx);
+    void  (*free_raw)(void *ptr, size_t size, void *ctx);
+    void *ctx;
+} mem_provider_t;
+
+static mem_provider_t default_provider = {
+	.alloc_raw = default_malloc,
+	.free_raw = default_free
+};
+
+static mem_provider_t *cur_provider = &default_provider;
 
 typedef struct arena_block {
 	unsigned short id;
 	bool is_wiped; // data[] is or not if full zeroing by shred()
+	mem_provider_t provider;
 	struct arena_block *next;
 	struct arena_block *prev;
 	size_t offset;
