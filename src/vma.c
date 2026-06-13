@@ -61,7 +61,7 @@ vma_zone_t *vma_create(const char *name, size_t size) {
 	zone->fd = fd;
 	zone->base_addr = base;
 	zone->capacity = size;
-	zone->offset = 0;
+	zone->offset = align_vma(sizeof(vma_zone_t));
 	zone->is_master = true;
 	strncpy(zone->name, name, sizeof(zone->name) - 1);
 	zone->name[sizeof(zone->name) - 1] = '\0';
@@ -101,7 +101,7 @@ vma_zone_t *vma_attach(const char *name, size_t size) {
 	zone->fd = fd;
 	zone->base_addr = base;
 	zone->capacity = size;
-	zone->offset = 0;
+	zone->offset = align_vma(sizeof(vma_zone_t));
 	zone->is_master = false;
 	strncpy(zone->name, name, sizeof(zone->name) - 1);
 	zone->name[sizeof(zone->name) - 1] = '\0';
@@ -132,7 +132,7 @@ void vma_reset(vma_zone_t *zone) {
 		p[i] = 0;
 	}
 
-	zone->offset = 0;
+	zone->offset = align_vma(sizeof(vma_zone_t));
 }
 
 void vma_unmap(vma_zone_t *zone) {
