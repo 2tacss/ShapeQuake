@@ -2,8 +2,6 @@
 #define CORE_ALLOCATOR_H
 
 #include <stddef.h>
-#include "common.h"
-#include "defines.h"
 #include "status.h"
 
 /* Paging size */
@@ -23,14 +21,15 @@ constexpr size_t MAX_HEAPS = 20;
  * Argument Flags
  */
 constexpr bool ARENA_REQUEST_RESET_OFFSET = true;
+constexpr bool ARENA_REQUEST_NO_RESET_OFFSET = false;
 constexpr bool ARENA_FORCE_DESTROY = true;
+constexpr bool ARENA_FORCE_NO_DESTROY = false;
 
 
-typedef struct  heap_tracker_t {
-	size_t active;
-	size_t allocated;
-	unsigned char *ptr[MAX_HEAPS];
-} heap_tracker_t;
+static void *default_malloc(void *ptr, size_t size, void *ctx);
+static void default_free(void *ptr,  size_t size, void *ctx);
+
+typedef struct {
 
 typedef struct arena_block {
 	unsigned short id;
@@ -55,16 +54,6 @@ typedef struct {
 	} stats;
 #endif
 } arena_t;
-
-
-/*******************
- * Heap Management *
- *******************/
-void tracker_init(heap_tracker_t *tracker);
-[[nodiscard]] void *heap_alloc(heap_tracker_t *tracker, size_t size);
-status_t heap_free(heap_tracker_t *tracker, void *ptr);
-status_t tracking_health(heap_tracker_t *tracker);
-
 
 /********************
  * Arena Management *
