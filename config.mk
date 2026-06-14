@@ -6,8 +6,7 @@ ROOT    := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 COMMON_INCLUDES := -I$(ROOT)/include \
                    -I$(ROOT)/include/error
 
-COMMON_SRCS := $(ROOT)/src/allocator.c \
-               $(ROOT)/src/error/sq_error.c
+COMMON_SRCS     := $(wildcard $(ROOT)/src/*.c) $(wildcard $(ROOT)/src/error/*.c)
 
 define gen_lsp
 	@printf "[\n" > $(2)

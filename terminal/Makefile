@@ -28,7 +28,7 @@ $(OBJ_DIR)/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-(OBJ_DIR)/common/%.o: $(ROOT)/src/%.c
+$(OBJ_DIR)/common/%.o: $(ROOT)/src/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 

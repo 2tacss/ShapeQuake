@@ -1,30 +1,62 @@
-# ==============================================================================
-# config.mk - ShapeQuake Common Build Configuration
-# ==============================================================================
+include config.mk
 
-CC      := clang
-CFLAGS  := -std=c23 -Wall -Wextra -g3 -O0 -D_POSIX_C_SOURCE=200809L -DDEBUG
+BIN      := shapequake
+INCLUDES := $(COMMON_INCLUDES)
+SRCS     := $(ROOT)/main.c $(COMMON_SRCS)
+LDLIBS   := -lpthread -lutil
 
-ROOT    := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+ifneq ($(filter main,$(MAKECMDGOALS)),)
+endif
 
-COMMON_INCLUDES := -I$(ROOT)/include \
-                   -I$(ROOT)/include/error
+ifneq ($(filter server,$(MAKECMDGOALS)),)
+	INCLUDES += -I$(ROOT)/server/include -I$(ROOT)/shell/include
+	SRCS     += $(filter-out %/main.c, $(wildcard $(ROOT)/server/src/*.c) $(wildcard $(ROOT)/server/src/**/*.c))
+	LDLIBS   += -lsqlite3
+endif
 
-COMMON_SRCS     := $(ROOT)/src/allocator.c \
-                   $(ROOT)/src/error/sq_error.c
+ifneq ($(filter shell,$(MAKECMDGOALS)),)
+	INCLUDES += -I$(ROOT)/shell/include -I$(ROOT)/terminal/include/pty
+	SRCS     += $(filter-out %/main.c, $(wildcard $(ROOT)/shell/src/*.c) $(wildcard $(ROOT)/shell/src/**/*.c))
+endif
 
-define gen_lsp
-	@printf "[\n" > $(2)
-	@first=1; \
-	for src in $(1); do \
-		if [ $$first -ne 1 ]; then printf ",\n" >> $(2); fi; \
-		printf "  {\n" >> $(2); \
-		printf "    \"directory\": \"$(CURDIR)\",\n" >> $(2); \
-		printf "    \"command\": \"$(CC) $(CFLAGS) $(INCLUDES) -c $$src\",\n" >> $(2); \
-		printf "    \"file\": \"$$src\"\n" >> $(2); \
-		printf "  }" >> $(2); \
-		first=0; \
+ifneq ($(filter terminal,$(MAKECMDGOALS)),)
+	INCLUDES += -I$(ROOT)/terminal/include -I$(ROOT)/terminal/include/pty $(shell pkg-config --cflags vterm 2>/dev/null || echo "")
+	SRCS     += $(filter-out %/main.c, $(wildcard $(ROOT)/terminal/src/*.c) $(wildcard $(ROOT)/terminal/src/**/*.c))
+	LDLIBS   += $(shell pkg-config --libs vterm 2>/dev/null || echo "-lvterm")
+endif
+
+ifneq ($(filter ui,$(MAKECMDGOALS)),)
+	INCLUDES += -I$(ROOT)/ui/include -I$(ROOT)/shell/include -I$(ROOT)/terminal/include
+	SRCS     += $(filter-out %/main.c, $(wildcard $(ROOT)/ui/src/*.c) $(wildcard $(ROOT)/ui/src/**/*.c))
+	LDLIBS   += -lX11 -lXext -lXrender
+endif
+
+ifneq ($(filter test,$(MAKECMDGOALS)),)
+	INCLUDES += -I$(ROOT)/test
+	SRCS     += $(wildcard $(ROOT)/test/*.c)
+endif
+
+ifeq ($(MAKECMDGOALS),)
+	MAKECMDGOALS := main server shell terminal ui test
+	include $(ROOT)/Makefile
+endif
+
+
+all: $(BIN)
+
+$(BIN): $(SRCS)
+	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@ $(LDLIBS)
+
+main server shell terminal ui test: $(BIN)
+	@:
+
+lsp:
+	$(call gen_lsp, $(SRCS), compile_commands.json)
+
+clean:
+	rm -f $(BIN) compile_commands.json
+	@for dir in server shell terminal ui test; do \
+		if [ -f $$dir/Makefile ]; then $(MAKE) -C $$dir clean; fi; \
 	done
-	@printf "\n]\n" >> $(2)
-	@echo "Generated $(CURDIR)/$(2)"
-endef
+
+.PHONY: all clean lsp main server shell terminal ui test
