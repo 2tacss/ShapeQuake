@@ -1,6 +1,5 @@
 #include "runtime/interceptor.h"
 #include "defines.h"
-#include <stdio.h>
 
 bool sq_intercept_input(byte b) {
 	if (b == SQ_KEY_CTRL_Q) {

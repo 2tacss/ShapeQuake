@@ -1,4 +1,4 @@
-#include "sq_pty.h"
+#include "pty/sq_pty.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <pty.h>

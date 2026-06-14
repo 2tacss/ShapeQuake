@@ -3,8 +3,7 @@
 #include <unistd.h>
 #include <poll.h>
 #include <stdint.h>
-#include "sq_pty.h"
-#include "common.h"
+#include "pty/sq_pty.h"
 
 int main(void) {
 	/* Initialize PTY without vterm dependency */

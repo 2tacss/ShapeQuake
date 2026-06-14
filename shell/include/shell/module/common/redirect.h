@@ -5,7 +5,7 @@
 
 /* Heredoc management using arena allocator */
 typedef struct {
-	sq_arena_t *arena;    /* Arena for temporary line storage */
+	arena_t *arena;    /* Arena for temporary line storage */
 	char *delimiter;      /* Heredoc delimiter (e.g., EOF) */
 	size_t total_size;    /* Total size of accumulated content */
 } sq_heredoc_t;

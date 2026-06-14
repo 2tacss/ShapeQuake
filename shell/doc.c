@@ -1,4 +1,10 @@
 /* --- include/core/allocator.h --- */
+#include "defines.h"
+#include <bits/posix2_lim.h>
+#include <unistd.h>
+#include <termios.h>
+#include <stdint.h>
+#include <pthread.h>
 
 typedef struct sq_arena_block {
 	struct sq_arena_block *next;
@@ -67,7 +73,7 @@ typedef struct {
 } sq_shell_ops_t;
 
 struct sq_shell_s {
-	char line_buffer[SQ_LINE_BUF_SIZE];
+	char line_buffer[MAX_SHELL_LINE];
 	size_t line_len;
 	const sq_shell_ops_t *ops;
 	sq_executer_t *exec;

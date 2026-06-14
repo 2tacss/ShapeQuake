@@ -1,7 +1,8 @@
-#pragma once
+#ifndef SQ_UI_UTILS_H_
+#define SQ_UI_UTILS_H_
 
-#include <stdio.h>
-#include <stdlib.h>
 
 [[noreturn]]
 void fatal(const char *msg);
+
+#endif

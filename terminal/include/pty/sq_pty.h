@@ -1,5 +1,5 @@
-#ifndef SHAPEQUAKE_PTY_H
-#define SHAPEQUAKE_PTY_H
+#ifndef SQ_TERMINAL_SQ_PTY_H
+#define SQ_TERMINAL_SQ_PTY_H
 
 #include "common.h"
 #include <sys/types.h>

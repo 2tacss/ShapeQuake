@@ -1,19 +1,18 @@
-#include "common.h"
-#include "error/sq_error.h"
-#include "protocol.h"
-#include "defines.h"
 #include "validate.h"
+#include "protocol.h"
+#include "status.h"
+#include "error/sq_error.h"
 
-sq_u16_t validate_packect_header(sq_packet_header_t *h) {
+status_t validate_packect_header(sq_packet_header_t *h) {
 	if (!h) {
 		SqErr.fatal("Invalid Param");
 	} else if (h->magic != SQ_MAGIC) {
-		// FIX: require code connection handling
-		return (SQ_INVALID_MAGIC | SQ_RETURN_CAT_RESPONSE);
+		// FIX: require code connection handling retry or close
+		return asstatus(CAT_RESPONSE, CND_INVALID, CODE_MAGIC);
 	} else if (h->payload_size < 1) {
-		return(SQ_INVALID_SIZE | SQ_RETURN_CAT_RESPONSE);
+		return asstatus(CAT_RESPONSE, CND_INVALID, CODE_SIZE);
 	} else {
-		return (SQ_SUCCESS | SQ_RETURN_CAT_RESPONSE);
+		return asstatus(CAT_RESPONSE, CND_SUCCESS, CODE_CONNECTION);
 	}
 }
 

@@ -11,12 +11,8 @@
 #include <fcntl.h>
 #include "common.h"
 #include "runtime/net.h"
-#include "protocol.h"
 #include "runtime/executer.h"
-#include "allocator.h"
-#include "shell/handlers.h"
 #include "shell/module/common/pipe.h"
-#include "shell/module/common/path.h"
 #include "ui/ui.h"
 
 
@@ -28,7 +24,7 @@ static void *_read_childpty(void *arg) {
 	sq_executer_t *exec = (sq_executer_t *)arg;
 	char c;
 	/* Buffer to hold the output log */
-	char *output_log = sq_malloc(65536);
+	char *output_log = malloc(65536);
 	size_t log_idx = 0;
 
 	if (!output_log) return nullptr;
@@ -65,7 +61,7 @@ static void *_read_childpty(void *arg) {
 		exec->show_prompt((sq_shell_t *)exec->callback_context);
 	}
 
-	sq_free(output_log);
+	free(output_log);
 	int status = 0;
 	waitpid(exec->child_pid, &status, 0);
 	exec->is_running = false;

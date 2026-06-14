@@ -1,5 +1,5 @@
-#ifndef SQ_EVENTS_H_
-#define SQ_EVENTS_H_
+#ifndef SQ_SERVER_EVENTS_H_
+#define SQ_SERVER_EVENTS_H_
 
 /* DB Events */
 typedef enum {

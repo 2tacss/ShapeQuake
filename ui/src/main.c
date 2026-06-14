@@ -1,6 +1,6 @@
 #include "utils.h"
-#include "x11_manager.h"
-#include "defines.h"
+#include "ui_defines.h"
+#include <stdio.h>
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>

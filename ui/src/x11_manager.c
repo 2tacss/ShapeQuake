@@ -1,5 +1,4 @@
 #include "x11_manager.h"
-#include "utils.h"
 #include <X11/Xlib.h>
 #include <stdio.h>
 

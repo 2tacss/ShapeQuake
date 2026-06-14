@@ -48,8 +48,8 @@ typedef const struct job_t *job_id_t;
 #define THREAD_PROCESS_SHARED 1
 #define THREAD_PROCESS_NO_SHARED 0
 
-#define NAME_VMA_SHARED_TASKS "vma_shared_tasks"
-#define NAME_VMA_SHARED_JOBS "vma_shared_jobs"
+#define NAME_VMA_SHARED_TASKS "vma_shared_tasks_%d"
+#define NAME_VMA_SHARED_JOBS "vma_shared_jobs_%d"
 
 enum task_type_t {
 	TASK_TYPE_SOMETHING
@@ -142,8 +142,9 @@ struct job_t {
 };
 
 struct job_driver_t {
-	void *(*spawn)(job_t *job);
-	void *(*request_stop)(job_t *job);
+	const char *name;
+	int (*spawn)(job_t *job);
+	int (*request_stop)(job_t *job);
 	int (*kill)(job_t *job, int signal);
 	int (*wait)(job_t *job, int *exit_code);
 };

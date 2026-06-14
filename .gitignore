@@ -1,0 +1,27 @@
+# === Build Artifacts ===
+**/obj/
+*.o
+*.d
+*.idx
+*.out
+
+# === Executables ===
+shapequake
+shapequake-shell
+sq_shell_test
+sq_server
+out
+
+# === LSP & Development Tools ===
+compile_commands.json
+compile_flags.txt
+.cache/
+.gdb_history
+*.pch
+*.db
+
+# === Temporary / Others ===
+abc
+*~
+*.swp
+create

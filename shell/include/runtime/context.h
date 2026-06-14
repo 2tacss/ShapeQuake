@@ -1,7 +1,6 @@
 #ifndef SQ_CORE_CONTEXT_H
 #define SQ_CORE_CONTEXT_H
 
-#include "defines.h"
 #include <termios.h>
 #include <unistd.h>
 #include <stdbool.h>

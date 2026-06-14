@@ -46,44 +46,41 @@ void sq_send_backlog(sq_shell_t *shell, const char *output, size_t output_len) {
 	size_t cmd_len = shell->line_len;
 	size_t full_payload_size = (cmd_len + 1) + (output_len + 1);
 
-	sq_header_t header = {
+	sq_packet_header_t header = {
 		.magic = SQ_MAGIC,
-		.type = SQ_CAT_EXEC_RESULT | SQ_TYPE_OVERVIEW,
+		.type = SQ_CAT_EXEC_LOG | SQ_TYPE_OVERVIEW,
 		.payload_size = (uint32_t)full_payload_size,
-//		.context = { .timestamp = (uint64_t)time(nullptr) }
 	};
 
 
-	sq_body_t body = {0};
-	body.content = {
-			.timestamp = (uint64_t)time(nullptr),
-		}
-	};
+	sq_packet_body_t body = {0};
+	body.content->timestamp = (uint64_t)time(nullptr);
 
 	/* Set environment context info */
-	if (getcwd(header.context.working_dir, sizeof(header.context.working_dir)) == nullptr) {
-		strncpy(header.context.working_dir, "unknown", sizeof(header.context.working_dir) - 1);
+	if (getcwd(body.content->working_dir, sizeof(body.content->working_dir)) == nullptr) {
+		strncpy(body.content->working_dir, "unknown", sizeof(body.content->working_dir) - 1);
 	}
-	strncpy(header.context.project_name, "ShapeQuake-Dev", sizeof(header.context.project_name) - 1);
+	strncpy(body.content->project_name, "ShapeQuake-Dev", sizeof(body.content->project_name) - 1);
 
-	/* 1. Send protocol header */
-	if (send(shell->net_middleware.fd, &header, sizeof(sq_header_t), 0) <= 0) {
-		goto error_cleanup;
-	}
+	// TODO:FIX: Changed packet structure: sq_packet_header_t and sq_packet_body_t
+// 	/* 1. Send protocol header */
+// 	if (send(shell->net_middleware.fd, &header, sizeof(sq_header_t), 0) <= 0) {
+// 		goto error_cleanup;
+// 	}
 
-	/* 2. Send Command string with null terminator */
-	send(shell->net_middleware.fd, shell->line_buffer, cmd_len, 0);
-	send(shell->net_middleware.fd, "\0", 1, 0);
+// 	/* 2. Send Command string with null terminator */
+// 	send(shell->net_middleware.fd, shell->line_buffer, cmd_len, 0);
+// 	send(shell->net_middleware.fd, "\0", 1, 0);
 
-	/* 3. Send Output data with null terminator */
-	send(shell->net_middleware.fd, output, output_len, 0);
-	send(shell->net_middleware.fd, "\0", 1, 0);
+// 	/* 3. Send Output data with null terminator */
+// 	send(shell->net_middleware.fd, output, output_len, 0);
+// 	send(shell->net_middleware.fd, "\0", 1, 0);
 
-	return;
+// 	return;
 
-error_cleanup:
-	/* Invalidate the fd on error to stop further attempts */
-	close(shell->net_middleware.fd);
-	shell->net_middleware.fd = -1;
+// error_cleanup:
+// 	/* Invalidate the fd on error to stop further attempts */
+// 	close(shell->net_middleware.fd);
+// 	shell->net_middleware.fd = -1;
 }
 

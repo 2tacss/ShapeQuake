@@ -70,12 +70,12 @@ void handle_redirection(char **argv) {
 
 /* Initialize heredoc context with a dedicated arena */
 sq_heredoc_t *sq_heredoc_init(const char *delimiter) {
-	sq_heredoc_t *hd = sq_malloc(sizeof(sq_heredoc_t));
+	sq_heredoc_t *hd = malloc(sizeof(sq_heredoc_t));
 	if (!hd) return nullptr;
 
 	/* Create arena with 1KB block size */
-	hd->arena = sq_arena_init(SQ_LINE_BUF_SIZE);
-	hd->delimiter = sq_strdup(delimiter);
+	hd->arena = arena_init(SQ_LINE_BUF_SIZE);
+	hd->delimiter = strdup(delimiter);
 	hd->total_size = 0;
 	return hd;
 }
@@ -93,18 +93,18 @@ char* sq_heredoc_read_all(sq_heredoc_t *hd) {
 		}
 
 		size_t len = strlen(line);
-		char *saved = sq_arena_alloc(hd->arena, len);
+		char *saved = arena_alloc(hd->arena, len);
 		if (saved) {
 			memcpy(saved, line, len);
 			hd->total_size += len;
 		}
 	}
 
-	char *flat = sq_malloc(hd->total_size + 1);
+	char *flat = malloc(hd->total_size + 1);
 	if (!flat) return nullptr;
 
 	size_t current_pos = 0;
-	sq_arena_block_t *b = hd->arena->head;
+	arena_block_t *b = hd->arena->head;
 	while (b) {
 		if (b->offset > 0) {
 			memcpy(flat + current_pos, b->data, b->offset);
@@ -120,7 +120,7 @@ char* sq_heredoc_read_all(sq_heredoc_t *hd) {
 void sq_heredoc_finish(sq_heredoc_t *hd) {
 	if (!hd) return;
 	/* Destroy all blocks in the arena at once */
-	sq_arena_destroy(hd->arena, true);
-	sq_free(hd->delimiter);
-	sq_free(hd);
+	arena_destroy(hd->arena, true);
+	free(hd->delimiter);
+	free(hd);
 }

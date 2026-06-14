@@ -1,5 +1,5 @@
-#ifndef _SQ_UI_UI_H
-#define _SQ_UI_UI_H
+#ifndef SQ_SHELL_UI_H_
+#define SQ_SHELL_UI_H_
 
 #include <unistd.h>
 

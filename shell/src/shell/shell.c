@@ -1,18 +1,16 @@
 #include "shell/shell.h"
 #include "protocol.h"
 #include "shell/handlers.h"
-#include "allocator.h"
 #include "runtime/executer.h"
 #include "runtime/net.h"
 #include "error/sq_error.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
 #include <time.h>
-
-
 
 /**
  * Handles from handlers
@@ -36,7 +34,7 @@ int sq_shell_init(sq_shell_t *shell, int rows, int cols) {
 	shell->ops = &g_default_shell_ops;
 
 	/* Allocate and initialize the execution engine */
-	shell->exec = (sq_executer_t *)sq_malloc(sizeof(sq_executer_t));
+	shell->exec = (sq_executer_t *)malloc(sizeof(sq_executer_t));
 	if (shell->exec == nullptr) {
 		SqErr.fatal(SqErrMsg.out_of_memory);
 		return -1; 
@@ -100,7 +98,7 @@ void sq_shell_finalize(sq_shell_t *shell) {
 	}
 	
 	if (shell->exec != NULL) {
-		sq_free(shell->exec);
+		free(shell->exec);
 		shell->exec = NULL;
 	}
 }

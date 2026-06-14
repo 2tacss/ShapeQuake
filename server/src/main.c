@@ -5,7 +5,6 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/epoll.h>
-#include <errno.h>
 #include <signal.h>
 
 #include "engine/net.h"
@@ -32,21 +31,21 @@ int main(void) {
 	exit(EXIT_SUCCESS);
 	
 	int epoll_fd;
-	sq_arena_t *server_arena;
+	arena_t *server_arena;
 	sq_server_context_t *ctx_server;
 	struct epoll_event ev, events[MAX_EVENTS];
 
-	server_arena = sq_arena_init(SQ_SIZE_BLOCK_DEFAULT);
+	server_arena = arena_init(SIZE_BLOCK_DEFAULT);
 	if (server_arena == nullptr) {
 		// TODO: pass
 	}
-	ctx_server = sq_arena_alloc(server_arena, sizeof(sq_server_context_t));
+	ctx_server = arena_alloc(server_arena, sizeof(sq_server_context_t));
 	ctx_server->arena = server_arena;
 	ev.data.fd = ctx_server->h_sock.fd;
 
 	signal(SIGINT, handle_sigint);
 
-	sq_db_init(ctx_server, "commands.db");
+	sq_db_init(&ctx_server->ctx_db, "commands.db");
 	start_listening(ctx_server);
 
 	epoll_fd = epoll_create1(0);
@@ -73,10 +72,10 @@ int main(void) {
 	}
 
 	printf("\nShutting down now...\n");
-	sq_db_close(ctx_server);
+	sq_db_close(&ctx_server->ctx_db);
 	close(ctx_server->h_sock.fd);
 	unlink(SQ_SOCKET_PATH);
-	sq_arena_destroy(server_arena, SQ_ARENA_REQUEST_RESET_OFFSET);
+	arena_destroy(server_arena, ARENA_REQUEST_RESET_OFFSET);
 	printf("\nShutdown safely.\n");
 
 	return 0;

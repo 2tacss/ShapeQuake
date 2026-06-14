@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <sqlite3.h>
-#include "common.h"
 #include "defines.h"
 #include "engine/net.h"
 #include "protocol.h"
 #include "allocator.h"
+#include "status.h"
 #include "engine/storage.h"
 
 
@@ -22,11 +22,11 @@ bool sq_db_init(sq_db_context_t *ctx, char *db_path) {
 		fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(ctx->h_db));
 		return false;
 	}
-	ctx->arena_overview_cnt = (sq_arena_t *)sq_arena_init(SQ_SIZE_BLOCK_DEFAULT);
+	ctx->arena_overview_cnt = (arena_t *)arena_init(SIZE_BLOCK_DEFAULT);
 
 	ctx->is_open = true;
 	ctx->is_arena_req = true;
-	sq_arena_set_contains_db_connection(ctx->arena_overview_cnt, true);
+	arena_set_contains_db_connection(ctx->arena_overview_cnt, true);
 
 	const char *sql = 
 		"CREATE TABLE IF NOT EXISTS command_logs ("
@@ -53,21 +53,21 @@ void sq_db_close(sq_db_context_t *ctx) {
 	if (ctx && ctx->is_open) {
 		sqlite3_close(ctx->h_db);
 		ctx->is_open = false;
-		sq_arena_set_contains_db_connection(ctx->arena_overview_cnt, false);
+		arena_set_contains_db_connection(ctx->arena_overview_cnt, false);
 	}
 }
 
-sq_u16_t sq_db_close_context(sq_db_context_t *ctx, bool require_force_destroy) {
+status_t sq_db_close_context(sq_db_context_t *ctx, bool require_force_destroy) {
 	if (ctx && ctx->is_arena_req) {
-		return sq_arena_destroy(ctx->arena_overview_cnt, require_force_destroy);
+		return arena_destroy(ctx->arena_overview_cnt, require_force_destroy);
 	}
-	return SQ_RETURN_CAT_SQ | SQ_NULL_VAL;
+	return asstatus(CAT_SERVER, CND_FAILURE, CODE_DESTROY);
 }
 
 /**
  * Main node Backlog data
  */
-int sq_db_save_backlog(sq_server_context_t *ctx_server, const sq_overview_context_t *ctx, const char *cmd, const char *output) {
+int sq_db_save_backlog(sq_server_context_t *ctx_server, const sq_overview_content_t *ctx, const char *cmd, const char *output) {
 	if (!ctx_server->ctx_db.h_db) return -1;
 
 	const char *sql = "INSERT INTO command_logs (timestamp, project, working_dir, command, output) VALUES (?, ?, ?, ?, ?);";
@@ -108,6 +108,12 @@ void sq_load_backlog(sq_server_context_t *ctx_server) {
 		const byte *working_dir;
 		const byte *command;
 		const byte *output;
+		(void)id;
+		(void)timestamp;
+		(void)project_name;
+		(void)working_dir;
+		(void)command;
+		(void)output;
 
 	while (sqlite3_step(stmt) == SQLITE_ROW) {
 		id = sqlite3_column_int(stmt, 0);

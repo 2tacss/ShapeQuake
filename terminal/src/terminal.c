@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <vterm.h>
 #include <pty.h>
+#include "pty/sq_pty.h"
 
 static void *pty_read_thread(void *arg) {
 	sq_terminal_t *term = (sq_terminal_t *)arg;
