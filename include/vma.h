@@ -2,7 +2,6 @@
 #define _VMA_H
 
 #include "allocator.h"
-#include "heap.h"
 #include <stddef.h>
 #include <stdbool.h>
 
@@ -23,6 +22,7 @@
  * ========================================================================== */
 
 #define MAX_SHM_NAME 32
+#define SHARED_ID_PROTECTED_ZONE 0
 #define SHARED_ID_START_AT 1
 
 static inline size_t align_vma(size_t size) {
@@ -47,13 +47,13 @@ struct vma_zone_t {
 /*******************
  * Core VMA APIs   *
  *******************/
-vma_zone_t *vma_create(heap_tracker_t *tracker, const char *name, size_t size);
-vma_zone_t *vma_attach(heap_tracker_t *tracker, const char *name, size_t size);
+vma_zone_t *vma_create(const char *name, size_t size);
+vma_zone_t *vma_attach(const char *name, size_t size);
 void *vma_alloc(vma_zone_t *zone, size_t size);
 void vma_reset(vma_zone_t *zone);
 void vma_unmap(vma_zone_t *zone);
-void vma_free(heap_tracker_t *tracker, vma_zone_t *zone);
-void vma_destroy(heap_tracker_t *tracker, vma_zone_t *zone);
+void vma_free(vma_zone_t *zone);
+void vma_destroy(vma_zone_t *zone);
 
 
 /*************************

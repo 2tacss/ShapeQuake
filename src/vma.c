@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+static heap_tracker_t s_tracker = {0};
 
 static void *vma_alloc_adapter(void *ptr, size_t size, void *ctx) {
 	vma_zone_t *zone = (vma_zone_t *)ctx;
@@ -26,10 +27,10 @@ static void vma_free_adapter(void *ptr, size_t size, void *ctx) {
 	(void)ctx;
 }
 
-vma_zone_t *vma_create(heap_tracker_t *tracker, const char *name, size_t size) {
+vma_zone_t *vma_create(const char *name, size_t size) {
 	if (!name || size == 0) return nullptr;
 
-	status_t s = tracking_health(tracker);
+	status_t s = tracking_health(&s_tracker);
 	if (CND_ABORT == get_cnd(s) || CND_FATAL == get_cnd(s)) return nullptr;
 
 	int fd = shm_open(name, O_CREAT | O_RDWR | O_EXCL, S_IRUSR | S_IWUSR);
@@ -53,7 +54,7 @@ vma_zone_t *vma_create(heap_tracker_t *tracker, const char *name, size_t size) {
 		return nullptr;
 	}
 
-	vma_zone_t *zone = (vma_zone_t *)heap_alloc(tracker, sizeof(vma_zone_t));
+	vma_zone_t *zone = (vma_zone_t *)heap_alloc(&s_tracker, sizeof(vma_zone_t));
 	if (!zone) {
 		perror("heap_alloc");
 		munmap(base, size);
@@ -78,10 +79,10 @@ vma_zone_t *vma_create(heap_tracker_t *tracker, const char *name, size_t size) {
 	return zone;
 }
 
-vma_zone_t *vma_attach(heap_tracker_t *tracker, const char *name, size_t size) {
+vma_zone_t *vma_attach(const char *name, size_t size) {
 	if (!name || size == 0) return nullptr;
 
-	status_t s = tracking_health(tracker);
+	status_t s = tracking_health(&s_tracker);
 	if (CND_ABORT == get_cnd(s) || CND_FATAL == get_cnd(s)) return nullptr;
 
 	int fd = shm_open(name, O_RDWR, 0);
@@ -97,7 +98,7 @@ vma_zone_t *vma_attach(heap_tracker_t *tracker, const char *name, size_t size) {
 		close(fd);
 	}
 
-	vma_zone_t *zone = (vma_zone_t *)heap_alloc(tracker, sizeof(vma_zone_t));
+	vma_zone_t *zone = (vma_zone_t *)heap_alloc(&s_tracker, sizeof(vma_zone_t));
 	if (!zone) {
 		perror("vma_attach: heap_alloc failed");
 		munmap(base, size);
@@ -157,21 +158,21 @@ void vma_unmap(vma_zone_t *zone) {
 	return;
 }
 
-void vma_free(heap_tracker_t *tracker, vma_zone_t *zone) {
+void vma_free(vma_zone_t *zone) {
 	if (!zone) return;
 
-	status_t s = tracking_health(tracker);
+	status_t s = tracking_health(&s_tracker);
 	if (CND_ABORT == get_cnd(s) || CND_FATAL == get_cnd(s)) return;
 
 	vma_unmap(zone);
-	heap_free(tracker, (void *)zone);
+	heap_free(&s_tracker, (void *)zone);
 	return;
 }
 
-void vma_destroy(heap_tracker_t *tracker, vma_zone_t *zone) {
+void vma_destroy(vma_zone_t *zone) {
 	if (!zone) return;
 
-	status_t s = tracking_health(tracker);
+	status_t s = tracking_health(&s_tracker);
 	if (CND_ABORT == get_cnd(s) || CND_FATAL == get_cnd(s)) return;
 
 	vma_unmap(zone);
@@ -180,7 +181,7 @@ void vma_destroy(heap_tracker_t *tracker, vma_zone_t *zone) {
 		shm_unlink(zone->name);
 	}
 
-	heap_free(tracker, (void *)zone);
+	heap_free(&s_tracker, (void *)zone);
 }
 
 mem_provider_t vma_get_provider(vma_zone_t *zone) {
