@@ -25,9 +25,24 @@
 	*    │
 	*    ├───── task_t         task;
 	*    ╰───── common_task_t  task_;
-	* ========================================================================================= */
+	* ============================================================================================ */
 
-#include "heap.h"
+	/* =========================================================================================== *
+	*  Lifecycle Workers and Jobs                                                                  *
+	* ============================================================================================ *
+	*     [ Worker threads ]                      [ destroy_workers() in main thread ]
+	*   while (1) { ... }                                   │
+	*       │ < Exit with flag shutdown >                   │
+	*       ▼                                               ▼
+	*   sem_post(&pool->ack_sem); ─────(posting)──── sem_wait(&pool->ack_sem);
+	*       │                                               │   
+	*       │                         <Checking `ack_sem` by while loop with pool->worker_count >
+	*       │                                               │ 
+	*       ▼                                               ▼
+	*   return nullptr; ─────────────────────────── pthread_join(w->tid); // join each worker threads.
+    * ============================================================================================= */
+
+
 #include "vma.h"
 #include <unistd.h>
 #include <pthread.h>
