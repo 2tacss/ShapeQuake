@@ -44,20 +44,21 @@ const char *prompt_body(debug_meta_t *meta, char *dst, size_t buffer_size) {
 	strncpy(funcname, meta->at_func, MAX_FUNC_NAME);
 	strncpy(trouble_source, meta->trouble_source, MAX_MSG);
 
-	status_extracted_t status_extracted = meta->extract(meta->status);
+	status_extracted_t status_extracted = {0};
+	meta->extract(&status_extracted, meta->status);
 
 	const char *prompt =
 	"=================================================================\n"
 	" DEBUG META\n"
 	"=================================================================\n"
 	"%s STATUS:\n"
-	"\t0x%016llX - %s\n" // category
-	"\t0x%016llX - %s\n" // condition
-	"\t0x%016llX - %s\n" // code
+	"\t0x%016llX - %s\n"
+	"\t0x%016llX - %s\n"
+	"\t0x%016llX - %s\n"
 	"%s DETAIL:\n"
 	"\t%ld in %s\n"
 	"\tFunc: %s\n"
-	"\tTroubled: %s\n"
+	"\tDetail: %s\n"
 	"\t%s\n"
 	;
 

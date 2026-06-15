@@ -14,7 +14,7 @@
 	.status           = status_val, \
 	.prompt_buffer    = nullptr, \
 	.extracted_status = nullptr,  \
-	.extract          = extract \
+	.extract          = extract_to_ptr \
 };
 
 #define MAX_MSG 128
@@ -38,7 +38,7 @@ struct debug_meta_t {
 	const status_t status;
 	char *prompt_buffer;
 	status_extracted_t *extracted_status;
-	status_extracted_t (*extract)(status_t status);
+	void (*extract)(status_extracted_t *dst, status_t status);
 };
 
 struct status_extracted_t {
@@ -59,19 +59,18 @@ static inline const char* get_relative_path(const char *filepath);
 // printf message
 void is_called(void);
 
-static inline status_extracted_t extract(status_t status) {
+static inline void extract_to_ptr(status_extracted_t *dst, status_t status) {
+	if (!dst) return;
 	cat_t cat = get_cat(status);
 	cnd_t cnd = get_cnd(status);
 	code_t code = get_code(status);
 
-	return (status_extracted_t){
-		.category = cat,
-		.condition = cnd,
-		.code = code,
-		.name_category = status_cat_name(cat),
-		.name_condition = status_cnd_name(cnd),
-		.name_code = status_code_name(code)
-	};
+	dst->category = cat;
+	dst->condition = cnd;
+	dst->code = code;
+	dst->name_category = status_cat_name(cat);
+	dst->name_condition = status_cnd_name(cnd);
+	dst->name_code = status_code_name(code);
 }
 
 static inline const char* get_relative_path(const char *filepath) {
