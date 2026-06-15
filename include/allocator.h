@@ -20,9 +20,9 @@ constexpr size_t SIZE_ARENA_DEFAULT = 1024;
  * Argument Flags
  */
 constexpr bool ARENA_REQUEST_RESET_OFFSET = true;
-constexpr bool ARENA_REQUEST_NO_RESET_OFFSET = false;
+constexpr bool ARENA_REQUEST_RESET_OFFSET_NO = false;
 constexpr bool ARENA_FORCE_DESTROY = true;
-constexpr bool ARENA_FORCE_NO_DESTROY = false;
+constexpr bool ARENA_FORCE_DESTROY_NO = false;
 
 
 static void *default_malloc(void *ptr, size_t size, void *ctx);
