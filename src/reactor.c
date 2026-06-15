@@ -15,18 +15,34 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
+
+#include "test/test.h"
+
 static heap_tracker_t s_tracker = {0};
 
 static void *working_loop(void *arg) {
     worker_t *self = (worker_t *)arg;
     if (!self) return nullptr;
 
-    // waiting semaphore and take a task out from local_quueue
-    // and run with callback
+	while (1) {
+		self->is_sleeping = true;
+		sem_wait(&self->sem);
+		// do smething
+		self->is_sleeping = false;
+		
+		if (self->shutdown) {
+			break;
+		}
+		
+	    // waiting semaphore and take a task out from local_quueue
+	    // and run with callback
+	}
+	sem_post(&self->parent_pool->ack_sem);
     return nullptr;
 }
 
 static inline void *on_exit(int something) {
+	(void)something;
 	return nullptr;
 }
 
