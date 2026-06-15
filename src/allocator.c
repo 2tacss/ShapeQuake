@@ -96,17 +96,17 @@ static inline void *arena_allocate_raw(arena_t *arena, size_t size) {
 	return ptr;
 }
 
-void *arena_alloc_impl(arena_t *arena, size_t size, const char *file, int line, const char *func) {
-	void *ptr = arena_allocate_raw(arena, size);
-	if (!ptr) return nullptr;
+// void *arena_alloc_impl(arena_t *arena, size_t size, const char *file, int line, const char *func) {
+// 	void *ptr = arena_allocate_raw(arena, size);
+// 	if (!ptr) return nullptr;
 
-	arena->stats.last_caller = func;
-	arena->stats.last_alloc_size = size;
-	(void)file;
-	(void)line;
+// 	arena->stats.last_caller = func;
+// 	arena->stats.last_alloc_size = size;
+// 	(void)file;
+// 	(void)line;
 
-	return ptr;
-}
+// 	return ptr;
+// }
 
 void *arena_alloc(arena_t *arena, size_t size) {
 	return arena_allocate_raw(arena, size);
