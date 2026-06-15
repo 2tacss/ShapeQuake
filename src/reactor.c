@@ -58,82 +58,46 @@ static void notify_done(common_task_t *self) {
 /* ========================================================================== *
  *  CALLBACKS `JOB DRIVER`                                                    *
  * ========================================================================== */
-/*
 static int process_spawn(job_t *job) {
-	snprintf(*(const char **)&job->shmname, sizeof(job->shmname), "/sq_shm_%d", idx_job);
-
-	int fd_shm = shm_open(job->shmname, O_CREAT | O_RDWR, 0666);
-	if (fd_shm == -1) {
-		return -1;
-	}
-
-	ftruncate(fd_shm, sizeof(shared_job_data_t));
-
-	job->shm = (shared_job_data_t *)mmap(
-		nullptr, sizeof(shared_job_data_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd_shm, 0
-	);
-	close(fd_shm);
-
-	job->shm->progress = 0;
-	snprintf(job->shm->message, sizeof(job->shm->message), "Initializing.");
-
-	job->ev_fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
-	if (job->ev_fd == -1) {
-		return -1;
-	}
 
 	pid_t pid = fork();
-	if (pid == -1) return -1;
+	if (pid == -1) {
+		perror("spawn filed: fork()");
+		_exit(127);
+	}
 
 	if (pid == 0) {
 		for (int p = 0; p <= 0; p++) {
-			sleep(1);
-
-			job->shm->progress = p * 33;
-			if (p == 3) {
-				job->shm->progress = 100;
-			}
-			snprintf(job->shm->message, sizeof(job->shm->message), "Running step: %d", p);
-
-			uint64_t pulse = 1;
-			write(job->ev_fd, &pulse, sizeof(pulse));
-
-			munmap(job->shm, sizeof(shared_job_data_t));
 			_exit(0);
 		}
 	}
 
-	job->handle.pid = pid;
-	job->type = JOB_TYPE_PROCESS;
+	memcpy((void *)&job->pid, &pid, sizeof(pid_t));
 	return 0;
 }
 
-static int process_spawn1(const char *cmd, job_t *job) {
-	pid_t pid = fork();
-	if (pid == 0) {
-		execl("/bin/sh", "sh", "-c", cmd, NULL);
-		_exit(1);
-	} else if (pid > 0) {
-		job->handle.pid = pid;
-		job->type = JOB_TYPE_PROCESS;
-		return 0;
-	}
-	return -1;
-}
-
 static int process_kill(job_t *job, int signal) {
-	if (!job || job->type != JOB_TYPE_PROCESS) {
-		return -1;
-	}
-	return kill(job->handle.pid, signal);
+	if (!job || job->pid < 1) return 1;
+	return kill(job->pid, signal);
 }
 
 static int process_request_stop(job_t *job) {
-	return kill(job->handle.pid, SIGTERM);
+	if (!job || job->pid < 1) return 1;
+	return kill(job->pid, SIGTERM);
 }
 
-static int process_wait(job_t job, int *exit_code) {
-	return waitpid(job.handle.pid, exit_code, 0);
+static int process_wait(job_t *job, int *exit_code) {
+    if (!job || job->pid <= 0) return -1;
+
+    int exit_status;
+    pid_t res = waitpid(job->pid, &exit_status, 0);
+    if (res > 0) {
+        if (WIFEXITED(exit_status) && exit_code) {
+            *exit_code = WEXITSTATUS(exit_status);
+        }
+        return 0;
+    }
+    return -1;
 }
 
 const job_driver_t process_driver = {
@@ -144,7 +108,6 @@ const job_driver_t process_driver = {
 	.wait = process_wait
 };
 
-*/
 
 /* ========================================================================== *
  *  SHARED MEMORY `THREADING`                                                 *
