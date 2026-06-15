@@ -29,6 +29,7 @@ typedef enum : stat_raw {
 	CAT_HEAP					= 0x0300ULL << 48,
 	CAT_HEAP_TRACKER			= 0x0310ULL << 48,
 	CAT_VMA						= 0x0400ULL << 48,
+	CAT_REACTOR					= 0x0500ULL << 48,
 	
 	CAT_JOB						= 0x0C00ULL << 48,
 	CAT_LOGGER					= 0x0D00ULL << 48,
@@ -87,6 +88,9 @@ typedef enum : stat_raw {
 	CODE_NO_EXIST				= 0x0051ULL << 16,
 	CODE_FOUND					= 0x0060ULL << 16,
 	CODE_NOT_FOUND				= 0x0061ULL << 16,
+	CODE_RANGE					= 0x0070ULL << 16,
+	CODE_EXIT					= 0x0080ULL << 16,
+	CODE_JOIN					= 0x0090ULL << 16,
 
 	/* CODE_FLG: from 0 to 15 */
 //	CODE_CONTEXT				= 1ULL << 0,
@@ -163,7 +167,7 @@ static inline code_t get_code_flg(status_t status) {
 [[nodiscard]] status_t asstatus(cat_t cat, cnd_t condition, code_t code);
 status_t init_status(cat_t cat);
 void setstatus(status_t *st, cat_t cat, cnd_t condition, code_t code);
-void clear_st(status_t *st);
+void clear_status(status_t *st);
 status_t update_status_cat(status_t st, cat_t cat);
 status_t update_status_cnd(status_t st, cnd_t cnd);
 status_t update_status_code(status_t st, code_t code);

@@ -35,6 +35,7 @@ static inline const char *status_cat_name(cat_t cat) {
 		case CAT_HEAP: return "CAT_HEAP";
 		case CAT_HEAP_TRACKER: return "CAT_HEAP_TRACKER";
 		case CAT_VMA: return "CAT_VMA";
+		case CAT_REACTOR: return "CAT_REACTOR";
 		case CAT_JOB: return "CAT_JOB";
 		case CAT_LOGGER: return "CAT_LOGGER";
 		case CAT_VIEW: return "CAT_VIEW";
@@ -87,6 +88,9 @@ static inline const char *status_code_name(code_t code) {
 		case CODE_NO_EXIST: return "CODE_NO_EXIST";
 		case CODE_FOUND: return "CODE_FOUND";
 		case CODE_NOT_FOUND: return "CODE_NOT_FOUND";
+		case CODE_RANGE: return "CODE_RANGE";
+		case CODE_EXIT: return "CODE_EXIT";
+		case CODE_JOIN: return "CODE_JOIN";
 	}
 }
 
