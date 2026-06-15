@@ -92,6 +92,7 @@ static inline void *arena_allocate_raw(arena_t *arena, size_t size) {
 
 	void *ptr = &arena->current->data[arena->current->offset];
 	arena->current->offset += aligned_size;
+	if (arena->is_reset) arena->is_reset = false;
 	return ptr;
 }
 
@@ -151,6 +152,7 @@ void arena_reset(arena_t *arena) {
 		it = it->next;
 	}
 	arena->current = arena->head;
+	arena->is_reset = true;
 }
 
 size_t get_amount_capacity(arena_block_t *head) {
@@ -211,7 +213,7 @@ status_t block_shred(arena_block_t *block, bool request_reset_offset) {
 
 status_t arena_destroy(arena_t *arena, bool force_destory) {
 	if (!arena) return asstatus(CAT_ARENA, CND_FATAL, CODE_PARAM);
-	if (!force_destory && ((arena->contains_db_handle || arena->contains_fd))) {
+	if (!force_destory && (arena->contains_db_handle || arena->contains_fd)) {
 		return asstatus(CAT_ARENA, CND_FAILURE, CODE_ARENA_FAILURE_RESOURCE_HELD);
 	}
 

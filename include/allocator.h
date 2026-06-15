@@ -58,10 +58,11 @@ typedef struct {
 	size_t block_size;
 	bool contains_fd;
 	bool contains_db_handle;
+	bool is_reset;
 #ifdef DEBUG
 	struct {
-	const char *last_caller;
-	size_t last_alloc_size;
+		const char *last_caller;
+		size_t last_alloc_size;
 	} stats;
 #endif
 } arena_t;
