@@ -288,4 +288,138 @@ void init_job(pool_t *pool, const int idx_job, const int id,
     };
 
     memcpy(&pool->jobs[idx_job], &temp, sizeof(job_t));
+void destroy_shared_task_data(pool_t *pool) {
+	if (!pool || !pool->shared_task_data) return;
+	if (pool->shared_task_data_count > SHARED_ID_PROTECTED_ZONE) return;
+
+	if (pool->workers == nullptr && pool->worker_count == SHARED_DATA_COUNT_NONE) {
+		vma_destroy(pool->shared_task_data);
+		pool->shared_task_data = nullptr;
+		pool->shared_task_data_count = SHARED_DATA_COUNT_NONE;
+	}
+}
+
+void destroy_shared_job_data(pool_t *pool) {
+	if (!pool) return;
+	if (pool->shared_job_data_count > SHARED_ID_PROTECTED_ZONE) return;
+
+	if (!pool->jobs && pool->job_count == SHARED_DATA_COUNT_NONE) {
+		vma_destroy(pool->shared_job_data);
+		pool->shared_job_data = nullptr;
+		pool->shared_job_data_count = SHARED_DATA_COUNT_NONE;
+	}
+}
+
+void destroy_workers(pool_t *pool) {
+	if (!pool) return;
+
+	status_t s = tracking_health(&s_tracker);
+	if (CND_ABORT == get_cnd(s) || CND_FATAL == get_cnd(s)) return;
+
+	for (int i = 0; i < pool->worker_count; i++) {
+		if (!pool->workers[i]) continue;
+
+	    worker_t *w = pool->workers[i];
+	    if (w) {
+	        w->shutdown = true;
+	        sem_post(&w->sem);
+	    }
+	}
+
+	for (int i = 0; i < pool->worker_count; i++) {
+		sem_wait(&pool->ack_sem);
+	}
+
+	for (int i = 0; i < pool->worker_count; i++) {
+		if (!pool->workers[i]) continue;
+
+	    worker_t *w = pool->workers[i];
+		if (!w->local_queues->is_reset) {
+			// Possibly Local Task Remained
+			// local queue manager MUST run arena_reset() with the flag `ARENA_REQUEST_RESET_OFFSET`,
+			// When all done.
+			arena_destroy(w->local_queues, ARENA_FORCE_DESTROY);
+		} else {
+			arena_destroy(w->local_queues, ARENA_FORCE_DESTROY);
+		}
+
+	    if (w && w->tid) {
+	        pthread_join(w->tid, nullptr);
+	    }
+
+		sem_destroy(&w->sem);
+		heap_free(&s_tracker, w);
+	}
+
+	heap_free(&s_tracker, pool->workers);
+	pool->workers = nullptr;
+	pool->worker_count = SHARED_DATA_COUNT_NONE;
+}
+
+void destroy_job(pool_t *pool) {
+	if (!pool) return;
+
+	status_t s = tracking_health(&s_tracker);
+	if (CND_ABORT == get_cnd(s) || CND_FATAL == get_cnd(s)) return;
+
+	char msg[64] = {0};
+	bool fire_log = false;
+
+	for (int i = 0; i < pool->job_count; i++) {
+		if (pool->jobs[i] && pool->jobs[i]->pid > 0) {
+			process_driver.kill(pool->jobs[i], SIGTERM);
+		}
+	}
+
+	for (int i = 0; i < pool->job_count; i++) {
+		if (!pool->jobs[i]) continue;
+		
+		job_t *j = pool->jobs[i];
+		if (j->pid > 0) {
+			//int final_code = -1;
+			int exit_status;
+		    if (waitpid(j->pid, &exit_status, 0) > 0) {
+				fire_log = false;
+				if (WIFEXITED(exit_status)) {
+					int code = WEXITSTATUS(exit_status);
+					snprintf(msg, 64, "Exit status with %d", code);
+					fire_log = true;
+				} else if (WIFSIGNALED(exit_status)) {
+					int sig = WTERMSIG(exit_status);
+					snprintf(msg, 64, "Exit signal by %d", sig);
+					fire_log = true;
+				}
+				
+				if (fire_log) {
+					debug_meta_t meta = DEBUG_META(
+										asstatus(CAT_REACTOR, CND_INFO, CODE_EXIT),
+										"waitpid()",
+										msg
+									);
+					dbgmsg(&meta);
+				}
+			}
+			// if (j->on_exit) j->on_exit(final_code);
+		}
+		heap_free(&s_tracker, j);
+		pool->jobs[i] = nullptr;
+		j = nullptr;
+	}
+
+	heap_free(&s_tracker, pool->jobs);
+	pool->jobs = nullptr;
+	pool->job_count = SHARED_DATA_COUNT_NONE;
+}
+
+void destroy_pool(pool_t *pool) {
+	if (MODE_REACTOR_EPOLL == pool->pooling_mode) {
+		if (pool->epollfd != -1) close(pool->epollfd);
+	}
+	destroy_job(pool);
+	destroy_workers(pool);
+	destroy_shared_job_data(pool);
+	destroy_shared_task_data(pool);
+	sem_destroy(&pool->ack_sem);
+    *(int *)&pool->id = INVALID_ID;
+    heap_free(&s_tracker, pool);
 }

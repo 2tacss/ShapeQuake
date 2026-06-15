@@ -72,9 +72,11 @@ typedef const struct job_t *job_id_t;
 #define MAX_SHARED_JOB_DATA 16
 #define MAX_SHM 8
 #define MAX_SHM_NAME 32
+#define SHARED_DATA_COUNT_NONE -1
+#define INVALID_ID -1
 
 #define THREAD_PROCESS_SHARED 1
-#define THREAD_PROCESS_NO_SHARED 0
+#define THREAD_PROCESS_SHARED_NO 0
 
 #define NAME_VMA_SHARED_TASKS "vma_shared_tasks_%d"
 #define NAME_VMA_SHARED_JOBS "vma_shared_jobs_%d"
@@ -87,7 +89,8 @@ enum event_from_t {
 	EVENT_FROM_EFD, // eventfd
 	EVENT_FROM_SFD, // signalfd
 	EVENT_FROM_TFD, // timerfd
-	EVENT_FROM_UFD // usbfd
+	EVENT_FROM_UFD, // usbfd
+	EVENT_FROM_MANUAL
 };
 
 enum event_type_t {
@@ -99,6 +102,11 @@ enum shared_type_t {
 	TYPE_SHARED_JOB,
 	TYPE_SHARED_BOTH
 };
+
+typedef enum {
+    MODE_PURE_THREAD_POOL,
+    MODE_REACTOR_EPOLL
+} pool_mode_t;
 
 struct shared_data_t {
     uintptr_t data_offset;
@@ -117,6 +125,8 @@ struct shared_job_data_t {
 };
 
 struct pool_t {
+	pool_mode_t pooling_mode;
+	int epollfd;
 	const int id;
 	int worker_count;
 	int job_count;
@@ -124,17 +134,19 @@ struct pool_t {
 	int shared_task_data_count;
 	worker_t **workers;
 	job_t **jobs;
+	sem_t ack_sem;
     vma_zone_t *shared_job_data;
     vma_zone_t *shared_task_data;
 };
 
 struct common_task_t {
 	const int id;
-	const int fdev;
-	const int fdsig;
 	const event_from_t from;
 	const event_type_t event_type;
 	const task_type_t task_type;
+	const int fdev;
+	void *const context;
+	volatile uint64_t last_active_pulse;
 	void *(*execute)(common_task_t *self);
 	void *(*on_load)(common_task_t *self);
 	void *(*on_exit)(common_task_t *self);
@@ -150,8 +162,11 @@ struct task_t {
 struct worker_t {
 	const int id;
 	const pthread_t tid;
-	task_t *local_queue[MAX_LOCAL_QUEUES];
+	arena_t *local_queues; // task_t list
 	sem_t sem;
+	bool is_sleeping;
+	bool shutdown;
+	pool_t *parent_pool;
 	shared_task_data_t *(*shared)(common_task_t *self, int shared_id); 
 	void (*notify_done)(common_task_t *self);
 };
@@ -186,14 +201,19 @@ shared_job_data_t *get_shared_job_slot(pool_t *pool, int shared_id);
 
 pool_t *init_mode_threading(const int worker_count, const int epollfd, const int pshared);
 pool_t *init_mode_processing(const int job_count, const int epollfd);
+pool_t *init_mode_threaded_processing(const int worker_count, const int job_count, const int epollfd, const int pshared);
 
 void init_worker(pool_t *pool, int idx_worker, int id, int pshared);
 void init_job(pool_t *pool, const int idx_job, const int id,
               const event_from_t evfrom, const event_type_t evtype,
               const char *shmname,
               const void *table_callbacks, void *arg, void *(*on_exit)(int));
-uint64_t init_shared(shared_type_t shared_type);
+
 void destroy_shared_task_data(pool_t *pool);
+void destroy_shared_job_data(pool_t *pool);
+void destroy_workers(pool_t *pool);
+void destroy_job(pool_t *pool);
+void destroy_pool(pool_t *pool);
 
 
 #endif
