@@ -1,8 +1,6 @@
 #ifndef _REACTOR_H
 #define _REACTOR_H
 
-
-
 	/* ===================================================================================== *
 	*   Memory Managements                                                                   *
 	*  ===================================================================================== *
@@ -171,12 +169,20 @@ struct worker_t {
 	void (*notify_done)(common_task_t *self);
 };
 
+/* ===================================================================== *
+ * struct job_t: const shared_job_data_t *shared_data;
+ * 💡 Pointer to this specific Job's allocated slot (the actual data)
+ * within the VMA shared memory.
+ * The child process (Job) maps the address obtained via 
+ * get_shared_job_slot(pool, id) here in order to write its own
+ * progress and exit status back to the Reactor (parent).
+ * ===================================================================== */
 struct job_t {
 	const int id;
 	const char *shmname;
 	const event_from_t from;
 	const event_type_t event_type;
-	const shared_job_data_t *ptr;
+	const shared_job_data_t *shared_data;
 	const pid_t pid;
 	const void *table_callbacks;
 	void *arg;
