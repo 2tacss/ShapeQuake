@@ -1,6 +1,34 @@
 #ifndef _REACTOR_H
 #define _REACTOR_H
 
+
+
+	/* ===================================================================================== *
+	*   Memory Managements                                                                   *
+	*  ===================================================================================== *
+	*  The structs are managed by three type of memory manager.
+	*  💡 Free and destroy manually via `destroy_...()` functions.
+	*
+	*  ╭─ [ by `heap_tracker` ]
+	*  │
+	*  ├────── pool_t pool;
+	*  ├────── job_t    **jobs;    // pool_t
+	*  ╰────── worker_t **workers; // pool_t
+	*
+	*  ╭─ [ by `vma_alloc` ]
+	*  │
+	*  ├────── shared_task_data_t   // pool_t
+	*  ╰────── shared_job_data_t   // pool_t
+	*  < vma uses heap_tracker inside >
+	*
+	*  ╭─ [ by `arena` ]
+	*  │ 
+	*  ╰─┬─ task_t *local_queue[MAX_LOCAL_QUEUES]; // worker_t
+	*    │
+	*    ├───── task_t         task;
+	*    ╰───── common_task_t  task_;
+	* ========================================================================================= */
+
 #include "heap.h"
 #include "vma.h"
 #include <unistd.h>
