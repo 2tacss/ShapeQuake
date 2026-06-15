@@ -183,14 +183,17 @@ void init_shared_task_data(pool_t *pool, const char *shmname);
 shared_task_data_t *get_shared_task_slot(pool_t *pool, int shared_id);
 void init_shared_job_data(pool_t *pool, const char *shmname);
 shared_job_data_t *get_shared_job_slot(pool_t *pool, int shared_id);
-pool_t *reactor_init(heap_tracker_t *tracker, int worker_count, int job_count);
-void init_worker(heap_tracker_t *tracker, pool_t *pool, int idx_worker, int id, int pshared);
-void init_job(heap_tracker_t *tracker, pool_t *pool, const int idx_job, const int id,
+
+pool_t *init_mode_threading(const int worker_count, const int epollfd, const int pshared);
+pool_t *init_mode_processing(const int job_count, const int epollfd);
+
+void init_worker(pool_t *pool, int idx_worker, int id, int pshared);
+void init_job(pool_t *pool, const int idx_job, const int id,
               const event_from_t evfrom, const event_type_t evtype,
               const char *shmname,
               const void *table_callbacks, void *arg, void *(*on_exit)(int));
 uint64_t init_shared(shared_type_t shared_type);
-task_t *init_task(void);
+void destroy_shared_task_data(pool_t *pool);
 
 
 #endif

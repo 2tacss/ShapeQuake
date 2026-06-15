@@ -21,8 +21,6 @@ status_t tracking_health(heap_tracker_t *tracker) {
 
 void tracker_init(heap_tracker_t *tracker) {
     if (!tracker) return;
-    tracker->active = 0;
-    tracker->allocated = 0;
     for (size_t i = 0; i < MAX_HEAPS; i++) {
         tracker->ptr[i] = nullptr;
     }

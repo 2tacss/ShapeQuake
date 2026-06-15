@@ -1,11 +1,13 @@
 #include "reactor.h"
 #include "allocator.h"
+#include "heap.h"
 #include "status.h"
 #include "vma.h"
 #include <pthread.h>
 #include <semaphore.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <semaphore.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/eventfd.h>
@@ -13,6 +15,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
+static heap_tracker_t s_tracker = {0};
 
 static void *working_loop(void *arg) {
     worker_t *self = (worker_t *)arg;
@@ -167,7 +170,7 @@ shared_job_data_t *get_shared_job_slot(pool_t *pool, int shared_id) {
 /* ========================================================================== *
  *  MODE SWITCHING                                                            *
  * ========================================================================== */
-pool_t *init_mode_threading(heap_tracker_t *tracker, int worker_count){
+pool_t *init_mode_threading(const int worker_count, const int epollfd, const int pshared) {
     if (0 > worker_count || worker_count > MAX_POOLS) return nullptr;
 
     status_t st = tracking_health(tracker);
@@ -188,7 +191,7 @@ pool_t *init_mode_threading(heap_tracker_t *tracker, int worker_count){
     return pool;
 }
 
-pool_t *init_mode_processing(heap_tracker_t *tracker, const int job_count) {    
+pool_t *init_mode_processing(const int job_count, const int epollfd) {
     if (0 > job_count || job_count > MAX_JOBS) return nullptr;
 
     status_t st = tracking_health(tracker);
@@ -209,7 +212,7 @@ pool_t *init_mode_processing(heap_tracker_t *tracker, const int job_count) {
     return pool;
 }
 
-pool_t *init_mode_threaded_processing(heap_tracker_t *tracker, int worker_count, int job_count) {
+pool_t *init_mode_threaded_processing(const int worker_count, const int job_count, const int epollfd, const int pshared) {
     if (( 0 > worker_count || worker_count > MAX_POOLS) ||
 			(0 > job_count || job_count > MAX_JOBS)) return nullptr;
 
@@ -265,7 +268,7 @@ void init_worker(heap_tracker_t *tracker, pool_t *pool, int idx_worker, int id, 
 /* ========================================================================== *
  * PROCESSING                                                                *
  * ========================================================================== */
-void init_job(heap_tracker_t *tracker, pool_t *pool, const int idx_job, const int id,
+void init_job(pool_t *pool, const int idx_job, const int id,
               const event_from_t evfrom, const event_type_t evtype,
               const char *shmname,
               const void *table_callbacks, void *arg, void *(*on_exit)(int)) {
