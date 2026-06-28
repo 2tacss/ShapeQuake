@@ -91,6 +91,14 @@ static inline const char *status_code_name(code_t code) {
 		case CODE_RANGE: return "CODE_RANGE";
 		case CODE_EXIT: return "CODE_EXIT";
 		case CODE_JOIN: return "CODE_JOIN";
+		case CODE_THREAD: return "CODE_THREAD";
+		case CODE_THREAD_CREATE: return "CODE_THREAD_CREATE";
+		case CODE_CONTAINS: return "CODE_CONTAINS";
+		case CODE_DB: return "CODE_DB";
+		case CODE_DB_INSERT: return "CODE_DB_INSERT";
+		case CODE_DB_UPDATE: return "CODE_DB_UPDATE";
+		case CODE_DB_DELETE: return "CODE_DB_DELETE";
+		case CODE_DB_SELECT: return "CODE_DB_SELECT";
 	}
 }
 

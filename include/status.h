@@ -11,6 +11,8 @@
 typedef enum : stat_raw {
 	CAT_NONE					= 0x0001ULL << 48,
 	CAT_SHELL					= 0x0010ULL << 48,
+	CAT_SHELL_EXECUTER			= 0x0011ULL << 48,
+	CAT_SHELL_PTY				= 0x0012ULL << 48,
 	CAT_TERMINAL				= 0x0020ULL << 48,
 	CAT_NODE_MAIN				= 0x0030ULL << 48,
 	CAT_NODE_MAIN_OVERVIEW		= 0x0031ULL << 48,
@@ -30,6 +32,7 @@ typedef enum : stat_raw {
 	CAT_HEAP_TRACKER			= 0x0310ULL << 48,
 	CAT_VMA						= 0x0400ULL << 48,
 	CAT_REACTOR					= 0x0500ULL << 48,
+	CAT_DB						= 0x0600ULL << 48,
 	
 	CAT_JOB						= 0x0C00ULL << 48,
 	CAT_LOGGER					= 0x0D00ULL << 48,
@@ -91,6 +94,14 @@ typedef enum : stat_raw {
 	CODE_RANGE					= 0x0070ULL << 16,
 	CODE_EXIT					= 0x0080ULL << 16,
 	CODE_JOIN					= 0x0090ULL << 16,
+	CODE_CONTAINS				= 0x00A0ULL << 16,
+	CODE_THREAD					= 0x00B0ULL << 16,
+	CODE_THREAD_CREATE			= 0x00B1ULL << 16,
+	CODE_DB						= 0x00C0ULL << 16,
+	CODE_DB_INSERT				= 0x00C1ULL << 16,
+	CODE_DB_UPDATE				= 0x00C2ULL << 16,
+	CODE_DB_DELETE				= 0x00C3ULL << 16,
+	CODE_DB_SELECT				= 0x00C4ULL << 16,
 
 	/* CODE_FLG: from 0 to 15 */
 //	CODE_CONTEXT				= 1ULL << 0,
@@ -103,7 +114,7 @@ typedef enum : stat_raw {
 constexpr stat_raw MASK_CAT					= 0xFFFFULL << 48; // 48〜63bit
 constexpr stat_raw MASK_CND					= 0xFFFFULL << 32; // 32〜47bit
 constexpr stat_raw MASK_CODE_ID				= 0xFFFFULL << 16; // 16〜31bit
-constexpr stat_raw MASK_CODE_FLG				= 0xFFFFULL << 0;  //  0〜15bit
+constexpr stat_raw MASK_CODE_FLG			= 0xFFFFULL << 0;  //  0〜15bit
 constexpr stat_raw MASK_CODE				= 0xFFFFFFFFULL;   // Entire CODE
 
 
