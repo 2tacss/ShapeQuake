@@ -373,11 +373,22 @@ void init_worker(pool_t *pool, int idx_worker, int id, int pshared) {
 	w->local_queues = arena_init(SIZE_ARENA_DEFAULT);
     sem_init(&w->sem, pshared, 0);
 	w->parent_pool = pool;
+	args_working_t args_working = {
+		.id_common_task = idx_worker,
+	};
+	w->args_working = args_working;
 
     pthread_t tid;
-    if (pthread_create(&tid, nullptr, working_loop, w) == 0) {
+    if (pthread_create(&tid, nullptr, start_working, w) == 0) {
         memcpy((void *)&w->tid, &tid, sizeof(pthread_t));
-    }
+    } else {
+		debug_meta_t d = DEBUG_META(
+			asstatus(CAT_REACTOR, CND_FATAL, CODE_THREAD_CREATE),
+			"pthread_create()",
+			"&tid, nullptr, start_working, &w"
+		);
+		dbgmsg(&d);
+	}
 }
 
 /* ========================================================================== *

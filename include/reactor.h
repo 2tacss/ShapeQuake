@@ -62,6 +62,7 @@ typedef enum task_type_t task_type_t;
 typedef enum event_from_t event_from_t;
 typedef enum event_type_t event_type_t;
 typedef enum shared_type_t shared_type_t;
+typedef struct args_working_t args_working_t;
 typedef struct common_task_t common_task_t;
 typedef struct task_t task_t;
 typedef struct worker_t worker_t;
@@ -175,6 +176,10 @@ struct task_t {
 	worker_t *my_handler;
 };
 
+struct args_working_t {
+	int id_common_task;
+};
+
 struct worker_t {
 	const int id;
 	const pthread_t tid;
@@ -183,6 +188,7 @@ struct worker_t {
 	bool is_sleeping;
 	bool shutdown;
 	pool_t *parent_pool;
+	args_working_t args_working;
 	shared_task_data_t *(*shared)(common_task_t *self, int shared_id); 
 	void (*notify_done)(common_task_t *self);
 };
