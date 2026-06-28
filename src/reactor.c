@@ -370,7 +370,7 @@ void init_worker(pool_t *pool, int idx_worker, int id, int pshared) {
     const worker_t temp = { .id = id, .shared = shared, .notify_done = notify_done };
     memcpy(w, &temp, sizeof(worker_t));
 
-	w->local_queues = arena_init(sizeof(SIZE_ARENA_DEFAULT));
+	w->local_queues = arena_init(SIZE_ARENA_DEFAULT);
     sem_init(&w->sem, pshared, 0);
 	w->parent_pool = pool;
 
