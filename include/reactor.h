@@ -215,10 +215,12 @@ struct job_driver_t {
 
 static inline shared_task_data_t *shared(common_task_t *self, int shared_id);
 static inline void notify_done(common_task_t *self);
-void init_shared_task_data(pool_t *pool, const char *shmname);
+void init_shared_task_data(pool_t *pool, const char *shmname, int pshared);
 shared_task_data_t *get_shared_task_slot(pool_t *pool, int shared_id);
-void init_shared_job_data(pool_t *pool, const char *shmname);
+void set_shared_task_data(pool_t *pool, int shared_id, shared_task_data_t shared);
+void init_shared_job_data(pool_t *pool, const char *shmname, int pshared);
 shared_job_data_t *get_shared_job_slot(pool_t *pool, int shared_id);
+void set_shared_job_data(pool_t *pool, int shared_id, shared_job_data_t shared);
 
 pool_t *init_mode_threading(const int worker_count, const int epollfd, const int pshared);
 pool_t *init_mode_processing(const int job_count, const int epollfd);

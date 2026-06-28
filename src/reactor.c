@@ -133,14 +133,14 @@ const job_driver_t process_driver = {
 /* ========================================================================== *
  *  SHARED MEMORY `THREADING` [ VMA ]                                         *
  * ========================================================================== */
-void init_shared_task_data(pool_t *pool, const char *shmname) {
+void init_shared_task_data(pool_t *pool, const char *shmname, int pshared) {
     if (!pool || !shmname) return;
 
 	char shm_name[MAX_SHM_NAME] = {0};
 	strncpy(shm_name, shmname, MAX_SHM_NAME - 1);
 
     size_t total_size = sizeof(shared_task_data_t) * MAX_SHARED_TASK_DATA;
-    pool->shared_task_data = vma_create(shm_name, total_size);
+    pool->shared_task_data = vma_create(shm_name, total_size, pshared);
     if (!pool->shared_task_data) return;
 
     void *array_rack = vma_alloc(pool->shared_task_data, total_size);
@@ -157,10 +157,19 @@ shared_task_data_t *get_shared_task_slot(pool_t *pool, int shared_id) {
     return &array[shared_id];
 }
 
+void set_shared_task_data(pool_t *pool, int shared_id, shared_task_data_t shared) {
+	if (!pool || !pool->shared_task_data || !pool->shared_task_data->base_addr) return;
+	if (SHARED_ID_START_AT > shared_id || shared_id > MAX_SHARED_TASK_DATA) return;
+	pool->shared_task_data_count++;
+	
+	shared_task_data_t *sd = (shared_task_data_t *)vma_alloc(pool->shared_task_data, sizeof(shared_task_data_t));
+	memcpy(sd, &shared, sizeof(shared_task_data_t));
+}
+
 /* ========================================================================== *
  *  SHARED MEMORY `PROCESSING` [ VMA ]                                        *
  * ========================================================================== */
-void init_shared_job_data(pool_t *pool, const char *shmname) {
+void init_shared_job_data(pool_t *pool, const char *shmname, int pshared) {
 	if (!pool || !shmname) return;
 
 	char shm_name[MAX_SHM_NAME] = {0};
@@ -168,7 +177,7 @@ void init_shared_job_data(pool_t *pool, const char *shmname) {
 
 	size_t total_size = sizeof(shared_job_data_t) * MAX_SHARED_JOB_DATA;
 
-	pool->shared_job_data = vma_create(shm_name, total_size);
+	pool->shared_job_data = vma_create(shm_name, total_size, pshared);
 	if (!pool->shared_job_data) return;
 	
 	void *array_rack = vma_alloc(pool->shared_job_data, total_size);
@@ -183,6 +192,14 @@ shared_job_data_t *get_shared_job_slot(pool_t *pool, int shared_id) {
 
     shared_job_data_t *array = (shared_job_data_t *)pool->shared_job_data->base_addr;
     return &array[shared_id];
+}
+
+void set_shared_job_data(pool_t *pool, int shared_id, shared_job_data_t shared) {
+	if (!pool || !pool->shared_job_data || !pool->shared_job_data->base_addr) return;
+	pool->shared_job_data_count++;
+	
+	shared_job_data_t *sd = (shared_job_data_t *)vma_alloc(pool->shared_job_data, sizeof(shared_job_data_t));
+	memcpy(sd, &shared, sizeof(shared_job_data_t));
 }
 
 /* ========================================================================== *
