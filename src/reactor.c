@@ -452,6 +452,7 @@ void destroy_workers(pool_t *pool) {
 	}
 
 	for (int i = 0; i < pool->worker_count; i++) {
+		if (!pool->workers[i]) continue;
 		sem_wait(&pool->ack_sem);
 	}
 
