@@ -20,8 +20,8 @@
 
 static heap_tracker_t s_tracker = {0};
 
-static void *working_loop(void *arg) {
-    worker_t *self = (worker_t *)arg;
+static void *start_working(void *worker) {
+	if (!worker) return nullptr;
     if (!self) return nullptr;
 
 	while (1) {
