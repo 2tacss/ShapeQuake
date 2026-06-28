@@ -95,30 +95,33 @@ typedef const struct job_t *job_id_t;
 #define NAME_VMA_SHARED_JOBS "vma_shared_jobs_%d"
 
 enum task_type_t {
-	TASK_TYPE_SOMETHING
+	TASK_TYPE_BEGIN,
+	TASK_TYPE_SOMETHING,
+	TASK_TYPE_END
 };
 
 enum event_from_t {
+	EVENT_FROM_BEGIN,
 	EVENT_FROM_EFD, // eventfd
 	EVENT_FROM_SFD, // signalfd
 	EVENT_FROM_TFD, // timerfd
 	EVENT_FROM_UFD, // usbfd
-	EVENT_FROM_MANUAL
+	EVENT_FROM_MANUAL,
+	EVENT_FROM_END,
 };
 
 enum event_type_t {
-	EVENT_TYPE_SIGCHLD
-};
-
-enum shared_type_t {
-	TYPE_SHARED_WORKER,
-	TYPE_SHARED_JOB,
-	TYPE_SHARED_BOTH
+	EVENT_TYPE_BEGIN,
+	EVENT_TYPE_SIGCHLD,
+	EVENT_TYPE_SIGTERM,
+	EVENT_TYPE_END
 };
 
 typedef enum {
-    MODE_PURE_THREAD_POOL,
-    MODE_REACTOR_EPOLL
+	POOL_MODE_BEGIN,
+    POOL_MODE_PURE_THREAD_POOL,
+    POOL_MODE_REACTOR_EPOLL,
+	POOL_MODE_END
 } pool_mode_t;
 
 struct shared_data_t {
@@ -154,9 +157,9 @@ struct pool_t {
 
 struct common_task_t {
 	const int id;
-	const event_from_t from;
-	const event_type_t event_type;
-	const task_type_t task_type;
+	const event_from_t evfrom;
+	const event_type_t evtype;
+	const task_type_t tktype;
 	const int fdev;
 	void *const context;
 	volatile uint64_t last_active_pulse;
@@ -195,8 +198,8 @@ struct worker_t {
 struct job_t {
 	const int id;
 	const char *shmname;
-	const event_from_t from;
-	const event_type_t event_type;
+	const event_from_t evfrom;
+	const event_type_t evtype;
 	const shared_job_data_t *shared_data;
 	const pid_t pid;
 	const void *table_callbacks;

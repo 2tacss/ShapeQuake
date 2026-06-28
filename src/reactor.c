@@ -241,10 +241,10 @@ pool_t *init_mode_threading(const int worker_count, const int epollfd, const int
 	sem_init(&pool->ack_sem, 0, 0);
 	
 	if (epollfd != -1) {
-		pool->pooling_mode = MODE_REACTOR_EPOLL;
+		pool->pooling_mode = POOL_MODE_REACTOR_EPOLL;
 		pool->epollfd = epollfd;
 	} else {
-		pool->pooling_mode = MODE_PURE_THREAD_POOL;
+		pool->pooling_mode = POOL_MODE_PURE_THREAD_POOL;
 		pool->epollfd = -1;
 	}
 
@@ -276,10 +276,10 @@ pool_t *init_mode_processing(const int job_count, const int epollfd) {
 	pool_t *pool = (pool_t *)heap_alloc(&s_tracker, sizeof(pool_t));
     if (!pool) return nullptr;
 	if (epollfd != -1) {
-		pool->pooling_mode = MODE_REACTOR_EPOLL;
+		pool->pooling_mode = POOL_MODE_REACTOR_EPOLL;
 		pool->epollfd = epollfd;
 	} else {
-		pool->pooling_mode = MODE_PURE_THREAD_POOL;
+		pool->pooling_mode = POOL_MODE_PURE_THREAD_POOL;
 		pool->epollfd = -1;
 	}
 
@@ -322,10 +322,10 @@ pool_t *init_mode_threaded_processing(const int worker_count, const int job_coun
     if (!pool) return nullptr;
 
 	if (epollfd != -1) {
-		pool->pooling_mode = MODE_REACTOR_EPOLL;
+		pool->pooling_mode = POOL_MODE_REACTOR_EPOLL;
 		pool->epollfd = epollfd;
 	} else {
-		pool->pooling_mode = MODE_PURE_THREAD_POOL;
+		pool->pooling_mode = POOL_MODE_PURE_THREAD_POOL;
 		pool->epollfd = -1;
 	}
 	sem_init(&pool->ack_sem, 0, 0);
@@ -399,8 +399,8 @@ void init_job(pool_t *pool, const int idx_job, const int id,
     const job_t temp = {
         .id = id,
         .shmname = shmname,
-        .from = evfrom,
-        .event_type = evtype,
+        .evfrom = evfrom,
+        .evtype = evtype,
 		.pid = -1,
         .table_callbacks = table_callbacks,
         .arg = arg,
@@ -425,7 +425,7 @@ void destroy_shared_task_data(pool_t *pool) {
 }
 
 void destroy_shared_job_data(pool_t *pool) {
-	if (!pool) return;
+	if (!pool || pool->pooling_mode == POOL_MODE_PURE_THREAD_POOL) return;
 	if (pool->shared_job_data_count > SHARED_ID_PROTECTED_ZONE) return;
 
 	if (!pool->jobs && pool->job_count == SHARED_DATA_COUNT_NONE) {
@@ -482,7 +482,7 @@ void destroy_workers(pool_t *pool) {
 }
 
 void destroy_job(pool_t *pool) {
-	if (!pool) return;
+	if (!pool || pool->pooling_mode == POOL_MODE_PURE_THREAD_POOL) return;
 
 	status_t s = tracking_health(&s_tracker);
 	if (CND_ABORT == get_cnd(s) || CND_FATAL == get_cnd(s)) return;
@@ -537,7 +537,7 @@ void destroy_job(pool_t *pool) {
 }
 
 void destroy_pool(pool_t *pool) {
-	if (MODE_REACTOR_EPOLL == pool->pooling_mode) {
+	if (POOL_MODE_REACTOR_EPOLL == pool->pooling_mode) {
 		if (pool->epollfd != -1) close(pool->epollfd);
 	}
 	destroy_job(pool);
