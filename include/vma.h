@@ -4,17 +4,16 @@
 #include "allocator.h"
 #include <stddef.h>
 #include <stdbool.h>
-
-
+#include <pthread.h>
 
 /* ========================================================================== *
- *  CHECK THIS OUT - VMA SHM LAYOUT                                           *
+ * CHECK THIS OUT - VMA SHM LAYOUT                                           *
  * ========================================================================== *
  * Lower Addr ->   +-----------------------------------+
- *                 |  [Protected] VMA Meta Field       | (size: vma_zone_t)
+ * |  [Protected] VMA Meta Field       | (size: vma_zone_t)
  * Offset     ->   +-----------------------------------+
- *                 |  Array Element [0] (Logical ID 1) | (vma_alloc start)
- *                 |  Array Element [1] (Logical ID 2) |
+ * |  Array Element [0] (Logical ID 1) | (vma_alloc start)
+ * |  Array Element [1] (Logical ID 2) |
  * Higher Addr ->  +-----------------------------------+
  *
  * 💡 No manual offset required in higher layers.
@@ -29,7 +28,6 @@ static inline size_t align_vma(size_t size) {
 	return (size + 15) & ~15;
 }
 
-
 /****************
  * Data Types   *
  ****************/
@@ -42,12 +40,13 @@ struct vma_zone_t {
 	size_t offset;
 	bool is_master;
 	char name[MAX_SHM_NAME];
+	pthread_mutex_t mutex;
 };
 
 /*******************
  * Core VMA APIs   *
  *******************/
-vma_zone_t *vma_create(const char *name, size_t size);
+vma_zone_t *vma_create(const char *name, size_t size, int pshared);
 vma_zone_t *vma_attach(const char *name, size_t size);
 void *vma_alloc(vma_zone_t *zone, size_t size);
 void vma_reset(vma_zone_t *zone);
@@ -55,11 +54,9 @@ void vma_unmap(vma_zone_t *zone);
 void vma_free(vma_zone_t *zone);
 void vma_destroy(vma_zone_t *zone);
 
-
 /*************************
  * Allocator Integration *
  *************************/
 mem_provider_t vma_get_provider(vma_zone_t *zone);
 
 #endif
-

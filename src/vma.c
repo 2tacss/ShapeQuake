@@ -1,6 +1,5 @@
 #include "vma.h"
 #include "allocator.h"
-#include "heap.h"
 #include "status.h"
 #include <stddef.h>
 #include <stdio.h>
@@ -10,8 +9,6 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-static heap_tracker_t s_tracker = {0};
 
 static void *vma_alloc_adapter(void *ptr, size_t size, void *ctx) {
 	vma_zone_t *zone = (vma_zone_t *)ctx;
@@ -27,11 +24,32 @@ static void vma_free_adapter(void *ptr, size_t size, void *ctx) {
 	(void)ctx;
 }
 
-vma_zone_t *vma_create(const char *name, size_t size) {
-	if (!name || size == 0) return nullptr;
+static void *internal_vma_alloc(vma_zone_t *zone, size_t size) {
+    size_t aligned = align_vma(size);
 
-	status_t s = tracking_health(&s_tracker);
-	if (CND_ABORT == get_cnd(s) || CND_FATAL == get_cnd(s)) return nullptr;
+    if (zone->offset + aligned > zone->capacity) {
+        return nullptr;
+    }
+
+	void *ptr = (void *)((uintptr_t)zone + zone->offset);
+	zone->offset += aligned;
+	return ptr;
+}
+
+static void vma_init(vma_zone_t *zone, int pshared) {
+	if (pshared == 0) return;
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
+    pthread_mutexattr_setrobust(&attr, PTHREAD_MUTEX_ROBUST);
+    
+    pthread_mutex_init(&zone->mutex, &attr);
+    
+    pthread_mutexattr_destroy(&attr);
+}
+
+vma_zone_t *vma_create(const char *name, size_t size, int pshared) {
+	if (!name || size == 0) return nullptr;
 
 	int fd = shm_open(name, O_CREAT | O_RDWR | O_EXCL, S_IRUSR | S_IWUSR);
 	if (fd == -1) {
@@ -50,31 +68,23 @@ vma_zone_t *vma_create(const char *name, size_t size) {
 	if (base == MAP_FAILED) {
 		perror("mmap");
 		close(fd);
-		unlink(name);
+		shm_unlink(name);
 		return nullptr;
 	}
 
-	vma_zone_t *zone = (vma_zone_t *)heap_alloc(&s_tracker, sizeof(vma_zone_t));
-	if (!zone) {
-		perror("heap_alloc");
-		munmap(base, size);
-		close(fd);
-		unlink(name);
-		return nullptr;
-	}
+	memset(base, 0, size);
+	__asm__ volatile("" : : : "memory");
+
+	vma_zone_t *zone = (vma_zone_t *)base;
 
 	zone->fd = fd;
 	zone->base_addr = base;
 	zone->capacity = size;
 	zone->offset = align_vma(sizeof(vma_zone_t));
 	zone->is_master = true;
+	vma_init(zone, pshared);
 	strncpy(zone->name, name, sizeof(zone->name) - 1);
 	zone->name[sizeof(zone->name) - 1] = '\0';
-
-	volatile unsigned char *p = (volatile unsigned char *)base;
-	for (size_t i = 0; i < size; i++) {
-		p[i] = 0;
-	}
 
 	return zone;
 }
@@ -82,13 +92,9 @@ vma_zone_t *vma_create(const char *name, size_t size) {
 vma_zone_t *vma_attach(const char *name, size_t size) {
 	if (!name || size == 0) return nullptr;
 
-	status_t s = tracking_health(&s_tracker);
-	if (CND_ABORT == get_cnd(s) || CND_FATAL == get_cnd(s)) return nullptr;
-
 	int fd = shm_open(name, O_RDWR, 0);
 	if (fd == -1) {
 		perror("vma_attach: shm_open");
-		close(fd);
 		return nullptr;
 	}
 
@@ -96,92 +102,65 @@ vma_zone_t *vma_attach(const char *name, size_t size) {
 	if (base == MAP_FAILED) {
 		perror("vma_attach: mmap failed");
 		close(fd);
-	}
-
-	vma_zone_t *zone = (vma_zone_t *)heap_alloc(&s_tracker, sizeof(vma_zone_t));
-	if (!zone) {
-		perror("vma_attach: heap_alloc failed");
-		munmap(base, size);
-		close(fd);
 		return nullptr;
 	}
 
-	zone->fd = fd;
-	zone->base_addr = base;
-	zone->capacity = size;
-	zone->offset = align_vma(sizeof(vma_zone_t));
-	zone->is_master = false;
-	strncpy(zone->name, name, sizeof(zone->name) - 1);
-	zone->name[sizeof(zone->name) - 1] = '\0';
-
-	return zone;
+	return (vma_zone_t *)base;
 }
 
 void *vma_alloc(vma_zone_t *zone, size_t size) {
-	if (!zone || size == 0) return 0;
+    if (!zone) return nullptr;
 
-	size_t aligned = align_vma(size);
+    pthread_mutex_lock(&zone->mutex);
+    void *ptr = internal_vma_alloc(zone, size);
+    pthread_mutex_unlock(&zone->mutex);
 
-	if (zone->offset + aligned > zone ->capacity) {
-		fprintf(stderr, "vma_alloc: Out of memory in vma zone `%s`.\n", zone->name);
-		return nullptr;
-	}
-
-	void *ptr = (void *)((uintptr_t)zone->base_addr + zone->offset);
-	zone->offset += aligned;
-	return ptr;
+    return ptr;
 }
 
 void vma_reset(vma_zone_t *zone) {
 	if (!zone) return;
 
-	volatile unsigned char *p = (volatile unsigned char *)zone->base_addr;
-	for (size_t i = 0; i < zone->capacity; i++) {
-		p[i] = 0;
+	size_t meta_reserved = align_vma(sizeof(vma_zone_t));
+	if (zone->capacity > meta_reserved) {
+		memset((unsigned char *)zone->base_addr + meta_reserved, 0, zone->capacity - meta_reserved);
+		__asm__ volatile("" : : : "memory");
 	}
 
-	zone->offset = align_vma(sizeof(vma_zone_t));
+	zone->offset = meta_reserved;
 }
 
 void vma_unmap(vma_zone_t *zone) {
 	if (!zone) return;
 
-	if (zone->base_addr && zone->base_addr != MAP_FAILED) {
-		munmap(zone->base_addr, zone->capacity);
-		zone->base_addr = MAP_FAILED;
+	void *base = zone->base_addr;
+	size_t cap = zone->capacity;
+	int fd = zone->fd;
+
+	if (base && base != MAP_FAILED) {
+		munmap(base, cap);
 	}
 
-	if (zone->fd != -1) {
-		close(zone->fd);
-		zone->fd = -1;
+	if (fd != -1) {
+		close(fd);
 	}
-	return;
 }
 
 void vma_free(vma_zone_t *zone) {
 	if (!zone) return;
-
-	status_t s = tracking_health(&s_tracker);
-	if (CND_ABORT == get_cnd(s) || CND_FATAL == get_cnd(s)) return;
-
 	vma_unmap(zone);
-	heap_free(&s_tracker, (void *)zone);
-	return;
 }
 
 void vma_destroy(vma_zone_t *zone) {
 	if (!zone) return;
 
-	status_t s = tracking_health(&s_tracker);
-	if (CND_ABORT == get_cnd(s) || CND_FATAL == get_cnd(s)) return;
-
-	vma_unmap(zone);
+	pthread_mutex_destroy(&zone->mutex);
 
 	if (zone->is_master) {
 		shm_unlink(zone->name);
 	}
 
-	heap_free(&s_tracker, (void *)zone);
+	vma_unmap(zone);
 }
 
 mem_provider_t vma_get_provider(vma_zone_t *zone) {
@@ -191,5 +170,3 @@ mem_provider_t vma_get_provider(vma_zone_t *zone) {
 		.ctx = (void *)zone
 	};
 }
-
-
