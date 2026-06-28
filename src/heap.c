@@ -2,6 +2,28 @@
 #include "status.h"
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
+
+static void *internal_heap_alloc(heap_tracker_t *tracker, size_t required_size) {
+    if (!tracker || required_size < 1) return nullptr;
+    if (tracker->active >= MAX_HEAPS) return nullptr;
+
+    size_t req_aligned = align_heap(required_size);
+    size_t total_aligned_size = req_aligned + 16;
+    void *ptr = malloc(total_aligned_size);
+    if (!ptr) return nullptr;
+
+	memset(ptr, 0, total_aligned_size);
+	__asm__ volatile("" : : : "memory");
+    *(size_t *)ptr = req_aligned;
+
+    void *user_ptr = (unsigned char *)ptr + 16;
+    tracker->ptr[tracker->active] = user_ptr;
+    tracker->active++;
+    tracker->allocated += req_aligned;
+
+    return user_ptr;
+}
 
 /*******************
  * Heap Management *
@@ -26,25 +48,12 @@ void tracker_init(heap_tracker_t *tracker) {
     }
 }
 
-void *heap_alloc(heap_tracker_t *tracker, size_t required_size) {
-    if (!tracker || required_size < 1) return nullptr;
-    if (tracker->active >= MAX_HEAPS) return nullptr;
-
-    size_t req_aligned = align_heap(required_size);
-    size_t total_aligned_size = req_aligned + 16;
-    void *ptr = malloc(total_aligned_size);
-    if (!ptr) return nullptr;
-
-    volatile unsigned char *pointer = (volatile unsigned char *)ptr;
-    for (size_t i = 0; i < total_aligned_size; i++) pointer[i] = 0;
-    *(size_t *)ptr = req_aligned;
-
-    void *user_ptr = (unsigned char *)ptr + 16;
-    tracker->ptr[tracker->active] = user_ptr;
-    tracker->active++;
-    tracker->allocated += req_aligned;
-
-    return user_ptr;
+void *heap_alloc(heap_tracker_t *tracker, size_t size) {
+    if (!tracker) return nullptr;
+    pthread_mutex_lock(&tracker->mutex);
+    void *ptr = internal_heap_alloc(tracker, size);
+    pthread_mutex_unlock(&tracker->mutex);
+    return ptr;
 }
 
 void heap_free_all(heap_tracker_t *tracker) {
@@ -55,8 +64,8 @@ void heap_free_all(heap_tracker_t *tracker) {
             void *raw_ptr = (unsigned char *)tracker->ptr[i] - 16;
             size_t size = *(size_t *)raw_ptr;
             
-            volatile unsigned char *p = (volatile unsigned char *)raw_ptr;
-            for (size_t j = 0; j < size + 16; j++) p[j] = 0;
+			memset(raw_ptr, 0, size + 16);
+			__asm__ volatile("" : : : "memory");
             
             free(raw_ptr);
             tracker->ptr[i] = nullptr;
@@ -73,6 +82,7 @@ status_t heap_free(heap_tracker_t *tracker, void *ptr) {
         return asstatus(CAT_HEAP, CND_ABORT, CODE_PARAM);
     }
 
+	pthread_mutex_lock(&tracker->mutex);
     void *raw_ptr = (unsigned char *)ptr - 16;
     size_t req_aligned = *(size_t *)raw_ptr;
     size_t total_aligned_size = req_aligned + 16;
@@ -94,16 +104,15 @@ status_t heap_free(heap_tracker_t *tracker, void *ptr) {
         return asstatus(CAT_HEAP, CND_ABORT, CODE_NOT_FOUND);
     }
 
-    volatile unsigned char *pointer = (volatile unsigned char *)raw_ptr;
-    for (size_t i = 0; i < total_aligned_size; i++) {
-        pointer[i] = 0;
-    }
+	memset(raw_ptr, 0, total_aligned_size);
+	__asm__ volatile("" : : : "memory");
 
     free(raw_ptr);
     
     tracker->active--;
     tracker->allocated -= req_aligned;
 
+	pthread_mutex_unlock(&tracker->mutex);
     return asstatus(CAT_HEAP, CND_SUCCESS, CODE_FREE);
 }
 
