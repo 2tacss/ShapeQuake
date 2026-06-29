@@ -512,6 +512,66 @@ void init_job(pool_t *pool, const int idx_job, const int id,
     }
 }
 
+void enqueue(bool require_notify,
+	pool_t *pool,
+	const int worker_id,
+	const int common_task_id,
+	const task_type_t tktype,
+	const event_from_t evfrom,
+	const event_type_t evtype,
+	void *(*execute)(common_task_t *),
+	void *(*on_load)(common_task_t *),
+	void *(*on_exit)(common_task_t *),
+	void *arg) {
+
+	if (!pool || !pool->workers) return;
+	
+	worker_t *worker = pool->workers[worker_id];
+	if (!worker ||
+		!worker->local_queues ||
+		common_task_id < 0 ||
+		!is_evfrom(evfrom) ||
+		!is_evtype(evtype) ||
+		!is_tktype(tktype)) {
+			debug_meta_t d = DEBUG_META(asstatus(CAT_REACTOR, CND_FAILURE, CODE_PARAM), "Arguments wrong", "");
+			dbgmsg(&d);
+			return;
+		}
+
+	task_t *cur_queue = arena_alloc(worker->local_queues, sizeof(task_t));
+	if (!cur_queue) {
+		debug_meta_t d = DEBUG_META(asstatus(CAT_REACTOR, CND_FAILURE, CODE_ALLOC), "arena_alloc()", "Allocate new local queue.");
+		dbgmsg(&d);
+		return;
+	}
+
+	common_task_t common_task = {
+		.id = common_task_id,
+		.evfrom = evfrom,
+		.evtype = evtype,
+		.tktype = tktype,
+		.execute = execute,
+		.on_load = on_load,
+		.on_exit = on_exit,
+		.arg = arg
+	};
+
+	task_t target_task = {
+		.task_ = common_task,
+		.operation_ctx = pool,
+		.my_handler = worker
+	};
+
+	memcpy(cur_queue, &target_task, sizeof(task_t));
+
+	if (require_notify) {
+		sem_post(&worker->sem);
+	}
+}
+
+/* ========================================================================== *
+ *  Closing                                                                   *
+ * ========================================================================== */
 void destroy_shared_task_data(pool_t *pool) {
 	if (!pool || !pool->shared_task_data) return;
 	if (pool->shared_task_data_count > SHARED_ID_PROTECTED_ZONE) return;
@@ -554,6 +614,8 @@ void destroy_workers(pool_t *pool) {
 		if (!pool->workers[i]) continue;
 		sem_wait(&pool->ack_sem);
 	}
+	debug_meta_t a = DEBUG_META(asstatus(CAT_REACTOR, CND_DEBUG, CODE_DESTROY), "after", "works");
+	dbgmsg(&a);
 
 	for (int i = 0; i < pool->worker_count; i++) {
 		if (!pool->workers[i]) continue;
@@ -617,10 +679,10 @@ void destroy_job(pool_t *pool) {
 				
 				if (fire_log) {
 					debug_meta_t meta = DEBUG_META(
-										asstatus(CAT_REACTOR, CND_INFO, CODE_EXIT),
-										"waitpid()",
-										msg
-									);
+						asstatus(CAT_REACTOR, CND_INFO, CODE_EXIT),
+						"waitpid()",
+						msg
+					);
 					dbgmsg(&meta);
 				}
 			}
@@ -645,6 +707,6 @@ void destroy_pool(pool_t *pool) {
 	destroy_shared_job_data(pool);
 	destroy_shared_task_data(pool);
 	sem_destroy(&pool->ack_sem);
-    *(int *)&pool->id = INVALID_ID;
-    heap_free(&s_tracker, pool);
+	*(int *)&pool->id = INVALID_ID;
+	heap_free(&s_tracker, pool);
 }

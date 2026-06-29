@@ -91,6 +91,8 @@ typedef const struct job_t *job_id_t;
 
 #define MIN_WORKER_ID 0
 
+#define REACTOR_REACTOR_NOTIFY_QUEUE 1
+
 #define THREAD_PROCESS_SHARED 1
 #define THREAD_PROCESS_SHARED_NO 0
 
@@ -186,6 +188,7 @@ struct worker_t {
 	const int id;
 	const pthread_t tid;
 	arena_t *local_queues; // task_t list
+	bool is_done_queues;
 	sem_t sem;
 	bool is_sleeping;
 	bool shutdown;
@@ -246,7 +249,21 @@ void init_worker(pool_t *pool, int idx_worker, int id, int pshared);
 void init_job(pool_t *pool, const int idx_job, const int id,
               const event_from_t evfrom, const event_type_t evtype,
               const char *shmname,
-              const void *table_callbacks, void *arg, void *(*on_exit)(int));
+              const void *table_callbacks, void *arg, void *(*on_exit)(int)
+);
+
+void enqueue(bool require_notify,
+	pool_t *pool,
+	const int worker_id,
+	const int common_task_id,
+	const task_type_t tktype,
+	const event_from_t evfrom,
+	const event_type_t evtype,
+	void *(*execute)(common_task_t *),
+	void *(*on_load)(common_task_t *),
+	void *(*on_exit)(common_task_t *),
+	void *arg
+);
 
 void destroy_shared_task_data(pool_t *pool);
 void destroy_shared_job_data(pool_t *pool);
