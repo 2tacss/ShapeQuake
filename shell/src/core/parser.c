@@ -10,8 +10,8 @@
  * Parses the command line and allocates an execution payload.
  * It detects ShapeQuake-specific prefixes like 'subnode-Iv'.
  */
-sq_payload_exec_t* sq_parser_create_payload(const char *line, uint32_t *out_flags) {
-	sq_token_list_t *tokens = sq_tokenize(line);
+sq_payload_exec_t* parser_create_payload(const char *line, uint32_t *out_flags) {
+	token_list_t *tokens = shell_tokenize(line);
 	if (!tokens || tokens->count == 0) return NULL;
 
 	uint32_t flags = 0;
@@ -48,7 +48,7 @@ sq_payload_exec_t* sq_parser_create_payload(const char *line, uint32_t *out_flag
 	}
 
 	/* Clean up tokens */
-	// sq_tokenizer_free(tokens); 
+	shell_destroy_token(tokens); 
 
 	return payload;
 }

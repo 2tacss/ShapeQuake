@@ -3,6 +3,6 @@
 
 #include "protocol.h"
 
-sq_payload_exec_t* sq_parser_create_payload(const char *line, uint32_t *out_flags);
+sq_payload_exec_t* parser_create_payload(const char *line, uint32_t *out_flags);
 
 #endif
