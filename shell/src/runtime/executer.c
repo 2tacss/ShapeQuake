@@ -1,165 +1,117 @@
+#define _GNU_SOURCE
+#include "test/test.h"
+#include "runtime/executer.h"
+#include "core/module/common/path.h"
+#include "core/tokenizer.h"
+#include "status.h"
 #include <pty.h>
+#include <utmp.h>
+#include <pthread.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <stdio.h>
-#include <signal.h>
-#include <utmp.h>
-#include <errno.h>
+#include <sys/poll.h>
 #include <string.h>
-#include <sys/wait.h>
-#include <pthread.h>
-#include <fcntl.h>
-#include "common.h"
-#include "runtime/net.h"
-#include "runtime/executer.h"
-#include "shell/module/common/pipe.h"
-#include "ui/ui.h"
+#include <stdatomic.h>
+#include <errno.h>
+#include <wait.h>
 
+extern char **environ;
 
-/**
- * Callback pthread
- * Async read loop for PTY output.
- */
-static void *_read_childpty(void *arg) {
-	sq_executer_t *exec = (sq_executer_t *)arg;
-	char c;
-	/* Buffer to hold the output log */
-	char *output_log = malloc(65536);
-	size_t log_idx = 0;
+static void *shell_executer_read_thread(void *executer) {
+	if (!executer) return nullptr;
 
-	if (!output_log) return nullptr;
+	shell_executer_t *exec = (shell_executer_t *)executer;
+	if (exec->master_fd < 0) return nullptr;
 
-	while (exec->is_running) {
-		ssize_t n = read(exec->master_fd, &c, 1);
-		if (n > 0) {
-			/* Dispatch to UI layer */
-			sq_ui_dispatch_char(c);
+	char buf[4096];
 
-			/* Accumulate log for notification */
-			if (log_idx < 65535) {
-				output_log[log_idx++] = c;
+	while (atomic_load(&exec->is_thread_running)) {
+		struct pollfd pfd = { .fd = exec->master_fd, .events = POLLIN };
+		int num_fds = 1;
+		int ret = poll(&pfd, num_fds, 100);
+
+		if (ret > 0 && (pfd.revents & POLLIN)) {
+			ssize_t len = read(exec->master_fd, buf, sizeof(buf));
+			if (len > 0) {
+				exec->on_output(exec->shell_context, buf, len);
 			}
-		} else if (n <= 0) {
-			if (n < 0 && errno == EINTR) continue;
+			else if (len == 0) {
+				break;
+			} else {
+				if (errno == EAGAIN || errno == EWOULDBLOCK) continue;
+			}
+		} else if (ret < 0) {
+			if (errno == EINTR) continue;
+			break;
+		}
+		int status;
+		pid_t result = waitpid(exec->spawned_pid, &status, WNOHANG);
+		if (result > 0) {
+			exec->spawned_pid = -1;
 			break;
 		}
 	}
 
-	/*
-	* Execute callback if data exists and handler is registered
-	* handlers.c:
-	*	shell->exec->on_output = _on_exec_output_bridge;
-	*	shell->exec->show_prompt = print_prompt;
-	*	shell->exec->callback_context = shell;
-	*/
-	if (log_idx > 0 && exec->on_output) {
-		output_log[log_idx] = '\0';
-		exec->on_output(exec->callback_context, output_log, log_idx);
-	}
-
-	if (exec->show_prompt) {
-		exec->show_prompt((sq_shell_t *)exec->callback_context);
-	}
-
-	free(output_log);
-	int status = 0;
-	waitpid(exec->child_pid, &status, 0);
-	exec->is_running = false;
+	atomic_store(&exec->is_thread_running, false);
 	return nullptr;
 }
 
-//void sq_executer_process_output(sq_context_t *ctx, int sock_middleware) {
-//	char buf[4096];
-//	ssize_t n = read(ctx->master_fd, buf, sizeof(buf));
-//
-//	if (n <= 0) {
-//		/* Handle process exit or error... */
-//		return;
-//	}
-//
-//	/* 1. Update cumulative stats in context */
-//	ctx->output_buffer_size += n;
-//	for (ssize_t i = 0; i < n; i++) {
-//		if (buf[i] == '\n') ctx->line_count++;
-//	}
-//
-//	/* 2. Heuristic Progress Calculation */
-//	double current_progress = 0.0;
-//	if (ctx->expected_size > 0) {
-//		/* Case: Known size (e.g., cat file) */
-//		current_progress = (double)ctx->output_buffer_size / ctx->expected_size;
-//	} else {
-//		/* Case: Unknown size (e.g., grep) 
-//		 * Use a logarithmic or asymptotic curve to keep the line moving
-//		 * but never hitting 100% until the process actually exits.
-//		 */
-//		current_progress = 1.0 - (100.0 / (100.0 + ctx->output_buffer_size));
-//	}
-//
-//	/* 3. Build and Stream the packet */
-//	size_t payload_total = sizeof(sq_payload_result_t) + n;
-//	sq_payload_result_t *res = malloc(payload_total);
-//	
-//	res->progress.percentage = current_progress;
-//	res->progress.bytes_read = ctx->output_buffer_size;
-//	res->progress.line_count = ctx->line_count;
-//	res->chunk_size = n;
-//	memcpy(res->data, buf, n);
-//
-//	/* Send Header + Payload to Middleware */
-//	sq_header_t header = {
-//		.magic = SQ_MAGIC,
-//		.type = SQ_TYPE_EXEC_RESULT,
-//		.payload_size = payload_total,
-//		.context = ctx->saved_context /* Inherited from shell */
-//	};
-//
-//	write(sock_middleware, &header, sizeof(header));
-//	write(sock_middleware, res, payload_total);
-//
-//	free(res);
-//}
+void shell_executer_init(shell_executer_t *exec, void *shell_ptr, void (*callback)(void *, const char *, size_t)) {
+	if (!exec || !shell_ptr || !callback) return;
 
-/**
- * Spawn command execution as child process
- */
-SQ_NODISCARD
-int sq_executer_spawn(sq_executer_t *exec, char **argv) {
-	if (argv == nullptr || argv[0] == nullptr || exec == nullptr) return -1;
+	memset(exec, 0, sizeof(shell_executer_t));
+	__asm__ volatile("" : : : "memory");
 
-	/* 
-	 * Use forkpty to create a new PTY and avoid SIGHUP/Terminal 
-	 * conflicts between parent and children.
-	 */
-	exec->child_pid = forkpty(&exec->master_fd, nullptr, nullptr, nullptr);
-	if (exec->child_pid == -1) {
-		perror("forkpty");
-		return -1;
-	}
-
-	if (exec->child_pid == 0) {
-		/* Inside PTY slave: build and run the pipeline */
-		extract_pipe(argv);
-	}
-
-	/* Parent process: start async output monitoring */
-	exec->is_running = true;
-	if (pthread_create(&exec->read_thread, nullptr, _read_childpty, exec) != 0) {
-		// running flag managed in sq_read_childpty()
-		exec->is_running = false;
-		return -1;
-	}
-	pthread_detach(exec->read_thread);
-	return 0;
+	exec->master_fd = -1;
+	atomic_init(&exec->is_thread_running, false);
+	exec->shell_context = shell_ptr;
+	exec->on_output = callback;
 }
 
-void sq_executer_kill(sq_executer_t *exec) {
-	exec->is_running = false;
-	if (exec->child_pid > 0) {
-		kill(exec->child_pid, SIGHUP);
+status_t shell_executer_spawn(shell_executer_t *exec, token_list_t *list) {
+	if (!exec) return asstatus(CAT_SHELL_EXECUTER, CND_FAILURE, CODE_PARAM);
+
+	if (openpty(&exec->master_fd, &exec->slave_fd, nullptr, nullptr, nullptr) < 0) {
+		return asstatus(CAT_SHELL_PTY, CND_FAILURE, CODE_OPEN);
 	}
-	if (exec->master_fd >= 0) {
-		close(exec->master_fd);
+
+	pid_t pid = fork();
+	if (pid == 0) {
+		login_tty(exec->slave_fd);
+		char *cmd_path = resolve_path(list->tokens[0]);
+		if (cmd_path != nullptr) {
+			execve(cmd_path, list->tokens, environ);
+			int exec_err = errno; // TODO: pass to caller
+			(void)exec_err;
+			free(cmd_path);
+		}
+		_exit(1);
+	} else if (pid > 0) {
+		exec->spawned_pid = pid;
+		close(exec->slave_fd);
+		atomic_store(&exec->is_thread_running, true);
+		pthread_create(&exec->read_thread, nullptr, shell_executer_read_thread, exec);
+		int pthread_err = errno; // TODO: pass to caller
+		(void)pthread_err;
+	} else {
+		int err = errno;
+		debug_meta_t d = DEBUG_META(
+			asstatus(CAT_SHELL_EXECUTER, CND_FAILURE, CODE_OPEN),
+			"fork()",
+			strerror(err)
+		);
+		dbgmsg(&d);
 	}
-	pthread_join(exec->read_thread, nullptr);
+	return asstatus(CAT_SHELL_EXECUTER, CND_SUCCESS, CODE_EXIT);
+}
+
+void shell_executer_cleanup(shell_executer_t *exec) {
+    if (exec->spawned_pid > 0) {
+        int status;
+        if (waitpid(exec->spawned_pid, &status, WNOHANG) == 0) {
+            kill(exec->spawned_pid, SIGTERM);
+            waitpid(exec->spawned_pid, &status, 0);
+        }
+        exec->spawned_pid = -1;
+	}
 }

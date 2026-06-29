@@ -1,30 +1,51 @@
-#ifndef SQ_CORE_EXECUTOR_H
-#define SQ_CORE_EXECUTOR_H
+/* include/runtime/executer.h */
+#ifndef SHELL_CORE_EXECUTOR_H
+#define SHELL_CORE_EXECUTOR_H
 
+#include "core/tokenizer.h"
+#include "status.h"
 #include <pthread.h>
 #include <stdbool.h>
+#include <stdatomic.h>
 #include <sys/types.h>
-#include "common.h"
-#include "allocator.h"
-#include "runtime/net.h"
+#include <stddef.h>
 
-typedef void (*sq_output_callback_t)(void *context, const char *data, size_t len);
-typedef void (*sq_show_prompt_callback_t)(sq_shell_t *shell);
+/* ================================================================================== *
+ *  EXECUTER: manage user command stream / pty space / bridge                         *
+ *    The bridge among shell and pty process. The command line on user inputting are  *
+ *    monitored async by `read_thread`. The commands are put in `history_buffer` as   *
+ *    raw data (max buffer is 64Kb). Once the aync thread catched command one line,   *
+ *    tokenizes with `tokenizer,h` and `parse.h` and creates subprocess with command  *
+ *    passing away to pty process, and run command in pty space.                      *
+ *                                                                                    *
+ *    Bridge callback: defined shell/core/callbacks.h                                 *
+ *       void shell_cb_bridge_on_exec_output(                                         *
+ *                  void *context,                                                    *
+ *                  const char *data,                                                 *
+ *                  size_t len);                                                      *
+ * ================================================================================== */
+
+#define SHELL_EXEC_HISTORY_BUF_SIZE 65536
 
 typedef struct {
+	// PTY
 	int master_fd;
-	pid_t child_pid;
-	pthread_t read_thread;
-	volatile bool is_running;
-	/* Notification Hook */
-	sq_output_callback_t on_output;
-	sq_show_prompt_callback_t show_prompt;
-	void *callback_context;
-} sq_executer_t;
+	int slave_fd;
+	pthread_t read_thread; // monitoring pty
+	pid_t spawned_pid; // handled by read_thread()
+	atomic_bool is_thread_running;
 
+	char history_buffer[SHELL_EXEC_HISTORY_BUF_SIZE];
+	size_t history_offset;
 
-/* Existing process functions */
-SQ_NODISCARD int sq_executer_spawn(sq_executer_t *exec, char **argv);
-void sq_executer_kill(sq_executer_t *exec);
+	// notify output event occurences to shell with updated shell_context_t
+	void (*on_output)(void *shell_ptr, const char *data, size_t len);
+	void *shell_context;
+} shell_executer_t;
+
+void shell_executer_init(shell_executer_t *exec, void *shell_ptr, void (*callback)(void *, const char *, size_t));
+[[nodiscard]] status_t shell_executer_spawn(shell_executer_t *exec, token_list_t *list);
+void shell_executer_kill(shell_executer_t *exec);
+void shell_executer_finalize(shell_executer_t *exec);
 
 #endif
