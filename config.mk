@@ -15,7 +15,7 @@ define gen_lsp
 		if [ $$first -ne 1 ]; then printf ",\n" >> $(2); fi; \
 		printf "  {\n" >> $(2); \
 		printf "    \"directory\": \"$(CURDIR)\",\n" >> $(2); \
-		printf "    \"command\": \"$(CC) $(CFLAGS) $(INCLUDES) -c $$src\",\n" >> $(2); \
+		printf "    \"command\": \"$(CC) $(CFLAGS) $(INCLUDES) $(LDLIBS) -c $$src\",\n" >> $(2); \
 		printf "    \"file\": \"$$src\"\n" >> $(2); \
 		printf "  }" >> $(2); \
 		first=0; \
