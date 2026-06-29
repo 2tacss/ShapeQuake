@@ -25,12 +25,6 @@ void shell_cb_bridge_on_exec_output(void *context, const char *data, size_t len)
 	shell_send_backlog(shell, data, len);
 }
 
-static void shell_cb_output_byte(shell_t *shell, byte b) {
-	(void)shell;
-	putchar(b);
-	fflush(stdout);
-}
-
 static void shell_cb_output_str(shell_t *shell, const char *str) {
 	while (*str) {
 		shell_cb_output_byte(shell, (byte)*str++);

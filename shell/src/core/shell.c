@@ -4,6 +4,7 @@
 #include "runtime/context.h"
 #include "runtime/executer.h"
 #include "runtime/net.h"
+#include "ui/ui.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,18 +59,7 @@ void shell_input_byte(shell_t *shell, byte b) {
 	}
 }
 
-/**
- * Output a standard newline sequence.
- * This ensures compatibility across different terminal environments.
- */
-void output_newline(shell_t *shell) {
-	(void)shell;
-	/* \r\n is used to ensure the cursor moves to the start of the next line */
-	write(STDIN_FILENO, "\r\n", 2);
-	fflush(stdout);
-}
-
-void sq_shell_finalize(shell_t *shell) {
+void shell_finalize(shell_t *shell) {
 	if (shell == NULL) return;
 
 	if (shell->net_middleware.fd != -1) {
