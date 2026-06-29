@@ -4,30 +4,28 @@
 #include <termios.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <stdatomic.h>
 
 /* State of the ShapeQuake node */
 typedef enum {
-	SQ_STATE_IDLE,      /* Terminal Node: Waiting for command */
-	SQ_STATE_EXECUTING, /* Situation Node: Command running in PTY */
-	SQ_STATE_EXITING    /* Shutdown sequence */
-} sq_state_t;
+	SHELL_STATE_IDLE,      /* Terminal Node: Waiting for command */
+	SHELL_STATE_EXECUTING, /* Situation Node: Command running in PTY */
+	SHELL_STATE_EXITING    /* Shutdown sequence */
+} shell_state_t;
 
 typedef struct {
-	sq_state_t state;
-	pid_t foreground_pid;
-	int master_fd;      /* PTY master file descriptor */
-	struct termios orig_termios;
+	_Atomic shell_state_t state;
+	_Atomic pid_t foreground_pid;
+	struct termios original_termios; 
 	bool is_raw;
-	
-	/* Metadata for ShapeQuake nodes */
 	size_t output_buffer_size;
 	char *last_command;
-} sq_context_t;
+} shell_context_t;
 
 /* State control functions */
-void sq_context_init(sq_context_t *ctx);
-void sq_context_set_state(sq_context_t *ctx, sq_state_t state);
-void sq_sys_terminal_raw(sq_context_t *ctx);
-void sq_sys_terminal_cooked(sq_context_t *ctx);
+void shell_context_init(shell_context_t *ctx);
+void shell_context_set_state(shell_context_t *ctx, shell_state_t state);
+void shell_sys_terminal_raw(shell_context_t *ctx);
+void shell_sys_terminal_cooked(shell_context_t *ctx);
 
 #endif
