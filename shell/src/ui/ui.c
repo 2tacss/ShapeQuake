@@ -34,4 +34,26 @@ void shell_ui_put_prompt(shell_t *shell, bool require_newline) {
 		shell_ui_prompt(shell);
 	}
 }
+
+void shell_ui_dispatch_char(char c) {
+	if (c == '\n' && static_last_char != '\r') {
+		if (static_buf_idx < SHELL_UI_WRITE_BUF_SIZE) static_write_buf[static_buf_idx++] = '\r';
+	}
+
+	if (static_buf_idx < SHELL_UI_WRITE_BUF_SIZE) {
+		static_write_buf[static_buf_idx++] = c;
+	}
+	static_last_char = c;
+
+	if (c == '\n' || static_buf_idx >= SHELL_UI_WRITE_BUF_SIZE - 16) { 
+		write(STDOUT_FILENO, static_write_buf, static_buf_idx);
+		static_buf_idx = 0;
+	}
+}
+
+void shell_ui_flush(void) {
+	if (static_buf_idx > 0) {
+		write(STDOUT_FILENO, static_write_buf, static_buf_idx);
+		static_buf_idx = 0;
+	}
 }

@@ -1,3 +1,5 @@
+#include "runtime/context.h"
+#include "ui/ui.h"
 #define _GNU_SOURCE
 #include "test/test.h"
 #include "runtime/executer.h"
@@ -24,36 +26,37 @@ static void *shell_executer_read_thread(void *executer) {
 	if (exec->master_fd < 0) return nullptr;
 
 	char buf[4096];
+	int status;
 
 	while (atomic_load(&exec->is_thread_running)) {
 		struct pollfd pfd = { .fd = exec->master_fd, .events = POLLIN };
-		int num_fds = 1;
-		int ret = poll(&pfd, num_fds, 100);
+		int ret = poll(&pfd, 1, 100);
 
 		if (ret > 0 && (pfd.revents & POLLIN)) {
-			ssize_t len = read(exec->master_fd, buf, sizeof(buf));
-			if (len > 0) {
-				exec->on_output(exec->shell_context, buf, len);
-			}
-			else if (len == 0) {
+			ssize_t n = read(exec->master_fd, buf, sizeof(buf));
+
+			if (n > 0) {
+				for (ssize_t i = 0; i < n; i++) {
+					shell_ui_dispatch_char(buf[i]);
+					if (i == n - 1) continue;
+				}
+			} else if (n <= 0) {
 				break;
-			} else {
-				if (errno == EAGAIN || errno == EWOULDBLOCK) continue;
 			}
-		} else if (ret < 0) {
-			if (errno == EINTR) continue;
-			break;
 		}
-		int status;
+
 		pid_t result = waitpid(exec->spawned_pid, &status, WNOHANG);
 		if (result > 0) {
-			exec->spawned_pid = -1;
+			atomic_store(&exec->is_thread_running, false);
 			break;
 		}
 	}
 
 	shell_t *shell = (shell_t *)exec->shell_context;
 	shell_context_set_state(&shell->ctx, SHELL_STATE_IDLE);
+	shell_ui_flush();
+	shell_ui_put_prompt(shell, SHELL_UI_REQUIRE_NEWLINE_NO);
+
 	return nullptr;
 }
 
