@@ -33,7 +33,7 @@ void shell_finalize(shell_t *shell);
 void handle_char_default(shell_t *shell, char b);
 void handle_backspace_default(shell_t *shell);
 void execute_default(shell_t *shell);
-void sq_shell_input_byte(shell_t *shell, byte b);
+void shell_input_byte(shell_t *shell, byte b);
 void output_newline(shell_t *shell);
 
 #endif
