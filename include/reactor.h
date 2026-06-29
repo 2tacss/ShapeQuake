@@ -89,6 +89,8 @@ typedef const struct job_t *job_id_t;
 #define SHARED_DATA_COUNT_NONE -1
 #define INVALID_ID -1
 
+#define MIN_WORKER_ID 0
+
 #define THREAD_PROCESS_SHARED 1
 #define THREAD_PROCESS_SHARED_NO 0
 

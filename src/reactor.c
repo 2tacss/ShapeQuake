@@ -22,21 +22,78 @@ static heap_tracker_t s_tracker = {0};
 
 static void *start_working(void *worker) {
 	if (!worker) return nullptr;
-    if (!self) return nullptr;
+	worker_t *self = worker;
+	if (!self || self->id < MIN_WORKER_ID) {
+		if (self && self->parent_pool) {
+			debug_meta_t d = DEBUG_META(asstatus(CAT_REACTOR, CND_FATAL, CODE_PARAM), "sem_post()", "Throw");
+			dbgmsg(&d);
+			sem_post(&self->parent_pool->ack_sem);
+		}
+		return nullptr;
+	}
 
 	while (1) {
-		self->is_sleeping = true;
-		sem_wait(&self->sem);
-		// do smething
-		self->is_sleeping = false;
-		
 		if (self->shutdown) {
 			break;
 		}
-		
-	    // waiting semaphore and take a task out from local_quueue
-	    // and run with callback
+		self->is_sleeping = true;
+		sem_wait(&self->sem);
+		self->is_sleeping = false;
+		if (self->shutdown) {
+			break;
+		}
+
+
+		// Handling Queues
+		arena_block_t *cur_block = self->local_queues->head;
+		size_t read_offset = 0;
+
+		while (cur_block != nullptr) {
+			if (cur_block->is_wiped) {
+				cur_block = cur_block->next;
+				read_offset = 0;
+				continue;
+			}
+
+			while (read_offset < cur_block->offset) {
+				task_t *task = (task_t *)&cur_block->data[read_offset];
+				if (!task) {
+					debug_meta_t d = DEBUG_META(asstatus(CAT_REACTOR, CND_INFO, CODE_PARAM), "Empty block of arena.", "Something wrong");
+					dbgmsg(&d);
+				}
+
+				if (task->task_.on_load) {
+					task->task_.on_load(&task->task_);
+				}
+
+				if (task->task_.execute) {
+					task->task_.execute(&task->task_);
+				}
+
+				if (self->shared) {
+					int id_common_task = self->args_working.id_common_task;
+					//self->shared(&task->task_, id_common_task);
+				}
+
+				if (task->task_.on_exit) {
+					task->task_.on_exit(&task->task_);
+				}
+
+				if (self->notify_done) {
+					// self->notify_done(&task->task_);
+				}
+
+				if ((!self->local_queues->head) && !self->local_queues->is_reset) {
+					self->is_done_queues = true;
+				}
+				read_offset += align(sizeof(task_t));
+			}
+			cur_block = cur_block->next;
+			read_offset = 0;
+		}
+		arena_reset(self->local_queues);
 	}
+	self->is_sleeping = true;
 	sem_post(&self->parent_pool->ack_sem);
     return nullptr;
 }
