@@ -1,4 +1,5 @@
-#include "shell/module/common/path.h"
+#include "core/module/common/path.h"
+#include "core/shell.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -7,10 +8,6 @@
 #include <sys/wait.h>
 #include <pthread.h>
 #include <fcntl.h>
-#include "common.h"
-
-
-
 
 /**
  * Helper to resolve command name to absolute path using PATH environment variable.
@@ -30,7 +27,7 @@ char *resolve_path(const char *cmd) {
 	char *resolved = nullptr;
 
 	while (dir != nullptr) {
-		char full_path[SQ_LINE_BUF_SIZE];
+		char full_path[SHELL_COMMAND_LINE_BUF_SIZE];
 		snprintf(full_path, sizeof(full_path), "%s/%s", dir, cmd);
 		if (access(full_path, X_OK) == 0) {
 			resolved = strdup(full_path);

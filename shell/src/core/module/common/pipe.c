@@ -1,6 +1,6 @@
-#include "shell/module/common/pipe.h"
-#include "shell/module/common/path.h"
-#include "shell/module/common/redirect.h"
+#include "core/module/common/pipe.h"
+#include "core/module/common/path.h"
+#include "core/module/common/redirect.h"
 #include <pty.h>
 #include <unistd.h>
 #include <stdlib.h>

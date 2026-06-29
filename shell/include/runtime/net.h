@@ -7,8 +7,8 @@
 
 #include <stdio.h>
 
-struct sq_shell_s; 
-typedef struct sq_shell_s sq_shell_t;
+struct shell_t; 
+typedef struct shell_t shell_t;
 
 
 /**
@@ -21,7 +21,7 @@ int get_server_connection(void);
  * Header struct contains information for `backlog` using for Main node, Overview.
  * `sq_header_t` is defined in root/include/protocol.h.
  */
-void sq_send_backlog(sq_shell_t *shell, const char *output, size_t output_len);
+void shell_send_backlog(shell_t *shell, const char *output, size_t output_len);
 
 
 #endif

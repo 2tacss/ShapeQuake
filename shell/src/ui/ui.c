@@ -1,10 +1,10 @@
 #include "ui/ui.h"
-#include "shell/shell.h"
+#include "core/shell.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 
-void print_prompt(sq_shell_t *shell) {
+void print_prompt(shell_t *shell) {
 	(void)shell;
 	char *prompt = "sq> ";
 	write(STDOUT_FILENO, prompt, strlen(prompt));

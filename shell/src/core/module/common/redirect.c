@@ -8,7 +8,8 @@
 #include <pthread.h>
 #include <fcntl.h>
 #include "allocator.h"
-#include "shell/module/common/redirect.h"
+#include "core/shell.h"
+#include "core/module/common/redirect.h"
  
 
 /**
@@ -74,7 +75,7 @@ sq_heredoc_t *sq_heredoc_init(const char *delimiter) {
 	if (!hd) return nullptr;
 
 	/* Create arena with 1KB block size */
-	hd->arena = arena_init(SQ_LINE_BUF_SIZE);
+	hd->arena = arena_init(SHELL_COMMAND_LINE_BUF_SIZE);
 	hd->delimiter = strdup(delimiter);
 	hd->total_size = 0;
 	return hd;
@@ -82,7 +83,7 @@ sq_heredoc_t *sq_heredoc_init(const char *delimiter) {
 
 /* Read lines from stdin until delimiter and flatten into a single buffer */
 char* sq_heredoc_read_all(sq_heredoc_t *hd) {
-	char line[SQ_LINE_BUF_SIZE];
+	char line[SHELL_COMMAND_LINE_BUF_SIZE];
 	size_t delim_len = strlen(hd->delimiter);
 	
 	while (fgets(line, sizeof(line), stdin)) {

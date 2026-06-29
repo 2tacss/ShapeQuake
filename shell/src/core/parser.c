@@ -1,6 +1,6 @@
-#include "shell/parser.h"
+#include "core/parser.h"
 #include "protocol.h"
-#include "shell/tokenizer.h"
+#include "core/tokenizer.h"
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>

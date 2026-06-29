@@ -1,7 +1,7 @@
 #include "runtime/net.h"
 #include "protocol.h"
 #include "common.h"
-#include "shell/shell.h"
+#include "core/shell.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,14 +36,14 @@ int get_server_connection(void) {
  * Header struct contains information for `backlog` using for Main node, Overview.
  * `sq_header_t` is defined in root/include/protocol.h.
  */
-void sq_send_backlog(sq_shell_t *shell, const char *output, size_t output_len) {
+void shell_send_backlog(shell_t *shell, const char *output, size_t output_len) {
 	/* Check if the shell context and connection are valid */
 	if (shell == nullptr || shell->net_middleware.fd == -1 || output == nullptr) {
 		return;
 	}
 
 	/* Layout: [Command\0][Output\0] */
-	size_t cmd_len = shell->line_len;
+	size_t cmd_len = shell->command_line_len;
 	size_t full_payload_size = (cmd_len + 1) + (output_len + 1);
 
 	sq_packet_header_t header = {
@@ -54,13 +54,13 @@ void sq_send_backlog(sq_shell_t *shell, const char *output, size_t output_len) {
 
 
 	sq_packet_body_t body = {0};
-	body.content->timestamp = (uint64_t)time(nullptr);
+	body.timestamp = (uint64_t)time(nullptr);
 
 	/* Set environment context info */
-	if (getcwd(body.content->working_dir, sizeof(body.content->working_dir)) == nullptr) {
-		strncpy(body.content->working_dir, "unknown", sizeof(body.content->working_dir) - 1);
+	if (getcwd(body.working_dir, sizeof(body.working_dir)) == nullptr) {
+		strncpy(body.working_dir, "unknown", sizeof(body.working_dir) - 1);
 	}
-	strncpy(body.content->project_name, "ShapeQuake-Dev", sizeof(body.content->project_name) - 1);
+	strncpy(body.project_name, "ShapeQuake-Dev", sizeof(body.project_name) - 1);
 
 	// TODO:FIX: Changed packet structure: sq_packet_header_t and sq_packet_body_t
 // 	/* 1. Send protocol header */
