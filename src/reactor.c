@@ -186,6 +186,37 @@ const job_driver_t process_driver = {
 	.wait = process_wait
 };
 
+/* ========================================================================== *
+ *  IS FUNCTION                                                               *
+ * ========================================================================== */
+bool is_evfrom(event_from_t evfrom) {
+	if (evfrom < EVENT_FROM_BEGIN || evfrom > EVENT_FROM_END) {
+		return false;
+	}
+	return true;
+}
+
+bool is_evtype(event_type_t evtype) {
+	if (evtype < EVENT_TYPE_BEGIN || evtype > EVENT_TYPE_END) {
+		return false;
+	}
+	return true;
+}
+
+bool is_tktype(task_type_t tktype) {
+	if (tktype < TASK_TYPE_BEGIN || tktype > TASK_TYPE_END) {
+		return false;
+	}
+	return true;
+}
+
+bool is_pool_mode(pool_mode_t pool_mode) {
+	if (pool_mode < POOL_MODE_BEGIN || pool_mode > POOL_MODE_END) {
+		return false;
+	}
+	return true;
+}
+
 
 /* ========================================================================== *
  *  SHARED MEMORY `THREADING` [ VMA ]                                         *

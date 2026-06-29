@@ -233,6 +233,11 @@ void init_shared_job_data(pool_t *pool, const char *shmname, int pshared);
 shared_job_data_t *get_shared_job_slot(pool_t *pool, int shared_id);
 void set_shared_job_data(pool_t *pool, int shared_id, shared_job_data_t shared);
 
+bool is_evfrom(event_from_t evfrom);
+bool is_evtype(event_type_t evtype);
+bool is_tktype(task_type_t tktype);
+bool is_pool_mode(pool_mode_t pool_mode);
+
 pool_t *init_mode_threading(const int worker_count, const int epollfd, const int pshared);
 pool_t *init_mode_processing(const int job_count, const int epollfd);
 pool_t *init_mode_threaded_processing(const int worker_count, const int job_count, const int epollfd, const int pshared);
