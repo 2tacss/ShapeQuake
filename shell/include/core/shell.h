@@ -5,8 +5,9 @@
 #include <stddef.h>
 #include "defines.h"
 #include "protocol.h"
-#include "runtime/context.h"   /* shell_context_t */
-#include "runtime/executer.h"  /* shell_executer_t */
+#include "runtime/context.h"
+#include "runtime/executer.h"
+#include "core/builtin.h"
 
 typedef struct shell_t shell_t;
 
@@ -26,6 +27,7 @@ struct shell_t {
 	shell_context_t ctx; // shell state
 	shell_executer_t exec; // pty connection, context
 	sq_socket_handle_t net_middleware;
+	shell_builtin_registry_t builtin_registry;
 };
 
 int shell_init(shell_t *shell, int rows, int cols);

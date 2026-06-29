@@ -81,6 +81,18 @@ status_t shell_executer_spawn(shell_executer_t *exec, token_list_t *list) {
 		return asstatus(CAT_SHELL_PTY, CND_FAILURE, CODE_OPEN);
 	}
 
+	shell_t *shell = (shell_t *)exec->shell_context;
+	if (!shell) return asstatus(CAT_SHELL_EXECUTER, CND_FAILURE, CODE_PARAM);
+
+	// TODO: Require fix to Hash search algorithm
+	for (size_t i = 0; i < shell->builtin_registry.count; i++) {
+		if (strcmp(list->tokens[0], shell->builtin_registry.commands[i].name) == 0) {
+			shell->builtin_registry.commands[i].handler(shell, list);
+			shell_ui_put_prompt(shell, SHELL_UI_REQUIRE_NEWLINE_NO);
+			return asstatus(CAT_SHELL_EXECUTER, CND_SUCCESS, CODE_EXIT);
+		}
+	}
+	
 	pid_t pid = fork();
 	if (pid == 0) {
 		login_tty(exec->slave_fd);
