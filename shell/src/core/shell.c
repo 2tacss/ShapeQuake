@@ -1,6 +1,7 @@
 #include "protocol.h"
 #include "core/shell.h"
 #include "core/callbacks.h"
+#include "runtime/context.h"
 #include "runtime/executer.h"
 #include "runtime/net.h"
 #include <string.h>
@@ -20,7 +21,6 @@ const shell_ops_t g_default_shell_ops = {
 	.execute = shell_cb_execute_default,
 };
 
-
 extern const shell_ops_t g_default_shell_ops;
 
 [[nodiscard]]
@@ -29,6 +29,8 @@ int shell_init(shell_t *shell, int rows, int cols) {
 	__asm__ volatile("" : : : "memory");
 
 	shell_executer_init(&shell->exec, shell, shell_cb_bridge_on_exec_output);
+	shell_context_init(&shell->ctx);
+	shell->operations = &g_default_shell_ops;
 	
 	/* 
 	 * Initialize server connection.
@@ -45,21 +47,13 @@ int shell_init(shell_t *shell, int rows, int cols) {
 }
 
 void shell_input_byte(shell_t *shell, byte b) {
-	if (shell == NULL || shell->operations == nullptr) return;
+	if (shell == nullptr || shell->operations == nullptr) return;
 
-	/* 
-	 * Handle line execution on Carriage Return or Line Feed 
-	 */
 	if (b == '\r' || b == '\n') {
-		// handler.c: execute_default()
 		shell->operations->execute(shell);
-	} 
-	/* Handle Backspace or Delete (ASCII 0x7f/0x08) */
-	else if (b == 0x7f || b == 0x08) {
+	} else if (b == 0x7f || b == 0x08) {
 		shell->operations->handle_backspace(shell);
-	} 
-	/* Standard character input */
-	else {
+	} else {
 		shell->operations->handle_char(shell, b);
 	}
 }
