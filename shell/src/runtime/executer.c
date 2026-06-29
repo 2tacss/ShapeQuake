@@ -38,7 +38,6 @@ static void *shell_executer_read_thread(void *executer) {
 			if (n > 0) {
 				for (ssize_t i = 0; i < n; i++) {
 					shell_ui_dispatch_char(buf[i]);
-					if (i == n - 1) continue;
 				}
 			} else if (n <= 0) {
 				break;
