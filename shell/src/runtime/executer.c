@@ -52,7 +52,8 @@ static void *shell_executer_read_thread(void *executer) {
 		}
 	}
 
-	atomic_store(&exec->is_thread_running, false);
+	shell_t *shell = (shell_t *)exec->shell_context;
+	shell_context_set_state(&shell->ctx, SHELL_STATE_IDLE);
 	return nullptr;
 }
 
@@ -68,8 +69,11 @@ void shell_executer_init(shell_executer_t *exec, void *shell_ptr, void (*callbac
 	exec->on_output = callback;
 }
 
+// Fork and parse command and monitoring it with pthread(waitpid).
 status_t shell_executer_spawn(shell_executer_t *exec, token_list_t *list) {
-	if (!exec) return asstatus(CAT_SHELL_EXECUTER, CND_FAILURE, CODE_PARAM);
+	if (!exec || !list) return asstatus(CAT_SHELL_EXECUTER, CND_FAILURE, CODE_PARAM);
+
+	shell_context_set_state((shell_context_t *)exec->shell_context, SHELL_STATE_EXECUTING);
 
 	if (openpty(&exec->master_fd, &exec->slave_fd, nullptr, nullptr, nullptr) < 0) {
 		return asstatus(CAT_SHELL_PTY, CND_FAILURE, CODE_OPEN);

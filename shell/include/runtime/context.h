@@ -25,6 +25,7 @@ typedef struct {
 /* State control functions */
 void shell_context_init(shell_context_t *ctx);
 void shell_context_set_state(shell_context_t *ctx, shell_state_t state);
+shell_state_t shell_context_get_state(shell_context_t *ctx);
 void shell_sys_terminal_raw(shell_context_t *ctx);
 void shell_sys_terminal_cooked(shell_context_t *ctx);
 
