@@ -16,10 +16,8 @@ typedef struct server_context_t {
 	bool is_arena_req;
 } sq_server_context_t;
 
-sq_server_context_t *sq_server_init_context(void);
-sq_server_context_t *sq_server_init_server_context(void);
-bool sq_server_close_context(sq_server_context_t *ctx, bool require_force_destroy);
-status_t sq_server_destory_server_context(sq_server_context_t *ctx, bool require_force_destroy);
+sq_server_context_t *sq_server_create(const char *db_path);
+void sq_server_destroy(sq_server_context_t *ctx, bool require_force_destroy);
 void start_listening(sq_server_context_t *ctx_server);
 void sq_handle_client_payload(sq_server_context_t *ctx_server, int client_fd);
 
