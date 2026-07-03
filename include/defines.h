@@ -9,11 +9,6 @@
 #define SQ_DEFAULT_ROWS 24
 #define SQ_DEFAULT_COLS 80
 
-/**
- * Buffer Sizes
- */
-#define SQ_LINE_BUF_SIZE 1024
-#define SQ_PTY_BUF_SIZE  4096
 
 /**
  * Data Sizez

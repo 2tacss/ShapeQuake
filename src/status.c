@@ -34,26 +34,6 @@ status_t update_status_code_flg(status_t st, code_t flg) {
 	return st;
 }
 
-cat_t get_cat(status_t st) {
-	return (cat_t)(st.raw & MASK_CAT);
-}
-
-cnd_t get_cnd(status_t st) {
-	return (cnd_t)(st.raw & MASK_CND);
-}
-
-code_t get_code(status_t st) {
-	return (code_t)(st.raw & MASK_CODE);
-}
-
-code_t get_code_id(status_t st) {
-	return (code_t)(st.raw & MASK_CODE_ID);
-}
-
-code_t get_code_flg(status_t st) {
-	return (code_t)(st.raw & MASK_CODE_FLG);
-}
-
 void handle_status_exception(status_t st) {
 	cat_t cat  = (cat_t)(st.raw & MASK_CAT);
 	cnd_t cnd  = (cnd_t)(st.raw & MASK_CND);

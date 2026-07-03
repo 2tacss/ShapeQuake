@@ -25,3 +25,10 @@ abc
 *~
 *.swp
 create
+
+*.nu
+*.log
+
+docs/
+.clangd
+

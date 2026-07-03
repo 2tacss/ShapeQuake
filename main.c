@@ -1,40 +1,69 @@
-#include "status.h"
-#include "test/test.h"
-#include "reactor.h"
-#include <stdio.h>
+#include "core/shell.h"
+#include "ui/ui.h"
+#include "core/builtin.h"
+#include <stdlib.h>
+#include <stdbool.h>
+#include <unistd.h>
+#include <termios.h>
 
+/* 
+ * Build target selection:
+ * DEBUG: For testing on existing terminals like Alacritty.
+ * DEPLOY: For integration within the custom ShapeQuake terminal.
+ */
+
+// SHELL
 volatile bool g_stop_required = false;
+static struct termios g_orig_termios;
+
+#define DEBUG 1
+
+void set_terminal_raw_mode(void) {
+#ifdef DEBUG
+	/* Manual raw mode setup for external terminals */
+	struct termios raw;
+	if (tcgetattr(STDIN_FILENO, &g_orig_termios) != 0) return;
+	raw = g_orig_termios;
+	raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+	raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+	tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+#else
+	/* DEPLOY: Assume parent terminal has configured the PTY */
+#endif
+}
+
+void restore_terminal_mode(void) {
+#ifdef DEBUG
+	tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_orig_termios);
+#endif
+}
 
 int main(void) {
-    char msg[64];
-    debug_meta_t meta = DEBUG_META(asstatus(CAT_MAINFRAME, CND_SUCCESS, CODE_DESTROY), "on all mode", msg);
-    
-    printf("=== Starting Heavy Destroy/Leak Test ===\n");
-    
-    for (int i = 0; i < 1000; i++) {
-        /* [ Passed Test] Threading */
-        pool_t *pool_tread = init_mode_threading(4, -1, THREAD_PROCESS_SHARED_NO);
-        if (pool_tread) {
-            destroy_pool(pool_tread);
-        }
+	set_terminal_raw_mode();
+#ifdef DEBUG
+	atexit(restore_terminal_mode);
+#endif
 
-        /* [ Test on Progress ] Processing */
-        pool_t *pool_proc = init_mode_processing(4, -1);
-        if (pool_proc) {
-            destroy_pool(pool_proc);
-        }
+	shell_t shell = {0};
+	int ret = shell_init(&shell, 80, 24);
+	shell_builtin_init_regystry(&shell);
+	
+	shell_ui_put_prompt(&shell, SHELL_UI_REQUIRE_NEWLINE);
 
-        pool_t *pool_th_proc = init_mode_threaded_processing(4, 4, -1, THREAD_PROCESS_SHARED);
-        if (pool_th_proc) {
-            destroy_pool(pool_th_proc);
-        }
-        
-        if (i > -1 && (i % 1) == 0) {
-            snprintf(msg, 64, "Succeeded [ %d ]", i);
-            dbgmsg(&meta);
-        }
-    }
+	/* 
+	 * Main 1-byte granularity loop.
+	 * Interacts directly with STDIN (the PTY).
+	 */
+	while (!g_stop_required) {
+		byte b;
+		if (read(STDIN_FILENO, &b, 1) > 0) {
+			shell_input_byte(&shell, b);
+		} else {
+			break;
+		}
+	}
 
-    printf("=== Test Passed Cleanly ===\n");
-    return 0;
+	(void)ret;
+	return 0;
 }
+

@@ -11,7 +11,7 @@ static char static_last_char = 0;
 
 void shell_ui_prompt(shell_t *shell) {
 	(void)shell;
-	char *prompt = "sq> ";
+	char *prompt = "  ";
 	write(STDOUT_FILENO, prompt, strlen(prompt));
 	fflush(stdout);
 }
