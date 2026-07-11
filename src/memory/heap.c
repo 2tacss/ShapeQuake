@@ -43,9 +43,8 @@ status_t tracking_health(heap_tracker_t *tracker) {
 
 void tracker_init(heap_tracker_t *tracker) {
 	if (!tracker) return;
-	for (size_t i = 0; i < MAX_HEAPS; i++) {
-		tracker->ptr[i] = nullptr;
-	}
+	memset(tracker, 0, sizeof(heap_tracker_t));
+	__asm__ volatile("" : : : "memory");
 	pthread_mutex_init(&tracker->mutex, nullptr);
 }
 
@@ -93,9 +92,10 @@ status_t heap_free(heap_tracker_t *tracker, void *ptr) {
 	}
 
 	bool found = false;
-	for (size_t i = 0; i < MAX_HEAPS; i++) {
+	for (size_t i = 0; i < tracker->active; i++) {
 		if (tracker->ptr[i] == ptr) {
-			tracker->ptr[i] = nullptr;
+			tracker->ptr[i] = tracker->ptr[tracker->active - 1];
+			tracker->ptr[tracker->active - 1] = nullptr;
 			found = true;
 			break;
 		}
