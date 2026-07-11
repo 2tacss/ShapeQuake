@@ -38,7 +38,6 @@ int heap_alloc(heap_tracker_t *tracker) {
 	
 	tracker->slots[found_idx].ptr = ptr;
 	tracker->used_mask |= (1ULL << found_idx);
-	tracker->used_count++;
 	tracker->allocated += tracker->block_size;
 
 	pthread_mutex_unlock(&tracker->mutex);
@@ -57,7 +56,6 @@ void heap_free(heap_tracker_t *tracker, int idx) {
 			tracker->slots[idx].ptr = nullptr;
 		}
 		tracker->used_mask &= ~(1ULL << idx);
-		tracker->used_count--;
 		tracker->allocated -= tracker->block_size;
 	}
 
